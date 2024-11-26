@@ -1,0 +1,13 @@
+name: phantoms_env
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - torch
+    - pytorch-lightning
+    - torch-geometric
+    - massspecgym @ git+https://github.com/Jozefov/MassSpecGymMSn.git@main#egg=massspecgym
