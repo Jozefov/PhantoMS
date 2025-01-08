@@ -142,4 +142,5 @@ data/MSn/
 
 # lightning logs
 notebooks/lightning_logs/
-
+notebooks/logs/
+notebooks/*.log
