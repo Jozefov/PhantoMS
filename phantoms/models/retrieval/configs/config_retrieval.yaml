@@ -41,3 +41,9 @@ trainer:
 logs:
   dir: "logs"
   name: "gnn_retrieval_model"
+
+experiment_name: "experiment_1"
+
+wandb:
+  project: "PhantoMS_Retrieval"
+  entity: "jozefov-iocb-prague"

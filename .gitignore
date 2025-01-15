@@ -143,4 +143,6 @@ data/MSn/
 # lightning logs
 notebooks/lightning_logs/
 notebooks/logs/
+notebooks/wandb/
+notebooks/checkpoints/
 notebooks/*.log
