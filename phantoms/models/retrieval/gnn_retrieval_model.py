@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import global_mean_pool
+from massspecgym.models.base import Stage
 from phantoms.layers.gcn_layers import GCNLayer
 from phantoms.heads.retrieval_heads import RetrievalHead
 from phantoms.optimizations.loss_functions import MSELoss
@@ -44,7 +45,7 @@ class GNNRetrievalModel(RetrievalMassSpecGymModel):
 
         return x
 
-    def step(self, batch: dict, stage: str) -> dict:
+    def step(self, batch: dict, stage: Stage) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Perform a single step of training/validation/testing.
 

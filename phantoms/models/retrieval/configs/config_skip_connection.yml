@@ -1,0 +1,55 @@
+# experiments/retrieval/config_retrieval.yaml
+
+featurizer:
+  features: ['collision_energy', 'ionmode', 'adduct', 'spectrum_stats', 'atom_counts', 'value', 'retention_time', 'ion_source', 'binned_peaks']
+  feature_attributes:
+    atom_counts:
+      top_n_atoms: 12
+      include_other: true
+
+data:
+  file_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_trees.mgf"
+  file_json: "/Users/macbook/CODE/Majer:MassSpecGym/data/Retrieval/MassSpecGym_retrieval_candidates_mass.json"
+  split_file: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_split.tsv"
+  max_allowed_deviation: 0.005
+  batch_size: 2
+  num_workers: 0
+
+model:
+  hidden_channels: 2048  # Updated to 2048 as per your suggestion
+  fp_size: 4096
+  node_feature_dim: 1039
+  dropout_rate: 0.2
+  bottleneck_factor: 1.0  # Added to prevent dimension reduction in SkipBlocks
+  num_skipblocks: 3        # Added to specify the number of SkipBlocks
+  num_gcn_layers: 3        # Added to dynamically set the number of GCN layers
+
+metrics:
+  at_ks: [1, 5, 20]
+
+#optimizer:
+#  lr: 0.001
+#  weight_decay: 1e-4
+
+trainer:
+  accelerator: "cpu"  # Change to "gpu" if available
+  devices: 1
+  max_epochs: 2
+  log_every_n_steps: 10
+  limit_train_batches: 2  # Increased to allow logging every 10 steps
+  limit_val_batches: 2
+  limit_test_batches: 2
+  checkpoint_monitor: "val_loss"
+  save_top_k: 3
+  checkpoint_mode: "min"
+  checkpoint_dir: "checkpoints/"
+
+logs:
+  dir: "logs"
+  name: "gnn_retrieval_model"
+
+experiment_base_name: "skip_first"  # Base name for experiments
+
+wandb:
+  project: "PhantoMS_Retrieval"
+  entity: "jozefov-iocb-prague"

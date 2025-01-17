@@ -1,61 +1,79 @@
-# phantoms/models/retrieval/gnn_retrieval_model_large.py
-
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
+from massspecgym.models.base import Stage
 from torch_geometric.nn import global_mean_pool
 from phantoms.layers.gcn_layers import GCNLayer
 from phantoms.heads.retrieval_heads import SkipConnectionRetrievalHead
 from phantoms.optimizations.loss_functions import BCEWithLogitsLoss
 from massspecgym.models.retrieval.base import RetrievalMassSpecGymModel
 
-class GNNRetrievalModelLarge(RetrievalMassSpecGymModel):
+class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
     def __init__(
         self,
-        hidden_channels: int = 128,
+        hidden_channels: int = 2048,
         out_channels: int = 4096,  # Fingerprint size
-        node_feature_dim: int = 1039,  # Adjust based on your 'spec.x' feature size
+        node_feature_dim: int = 1039,
         dropout_rate: float = 0.2,
+        bottleneck_factor: float = 1.0,
+        num_skipblocks: int = 3,
+        num_gcn_layers: int = 3,
         *args,
         **kwargs
     ):
-        """Enhanced GNN-based retrieval model with three GCN layers and a complex head."""
         super().__init__(*args, **kwargs)
 
-        # Define GCN Layers
-        self.gcn1 = GCNLayer(node_feature_dim, hidden_channels)
-        self.gcn2 = GCNLayer(hidden_channels, hidden_channels)
-        self.gcn3 = GCNLayer(hidden_channels, hidden_channels)  # Third GCN layer
+        self.num_gcn_layers = num_gcn_layers
+
+        # Define GCN Layers dynamically
+        self.gcn_layers = nn.ModuleList()
+        in_channels = node_feature_dim
+        for i in range(num_gcn_layers):
+            self.gcn_layers.append(GCNLayer(in_channels, hidden_channels))
+            in_channels = hidden_channels
 
         # Define Skip Connection Retrieval Head
         self.head = SkipConnectionRetrievalHead(
             input_size=hidden_channels,
             hidden_size=hidden_channels,
             output_size=out_channels,
-            bottleneck_factor=0.5,
-            num_skipblocks=3,
+            bottleneck_factor=bottleneck_factor,
+            num_skipblocks=num_skipblocks,
             dropout_rate=dropout_rate
         )
 
         # Define Loss Function
-        self.loss_fn = BCEWithLogitsLoss()  # Suitable for binary vector prediction
+        self.loss_fn = BCEWithLogitsLoss()  # Binary vector prediction
 
-    def forward(self, data):
+    def forward(self, data, collect_embeddings=False):
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
         # Pass through GCN layers
-        x = self.gcn1(x, edge_index)
-        x = self.gcn2(x, edge_index)
-        x = self.gcn3(x, edge_index)
-
-        # Global Mean Pooling
-        x = global_mean_pool(x, batch)  # Shape: [batch_size, hidden_channels]
+        embeddings = {}
+        for idx, gcn in enumerate(self.gcn_layers, 1):
+            x = gcn(x, edge_index)
+            if collect_embeddings:
+                x_pooled = global_mean_pool(x, batch)
+                embeddings[f'gcn{idx}'] = x_pooled.detach().cpu()
 
         # Pass through Retrieval Head
-        x = self.head(x)  # Shape: [batch_size, fp_size]
+        x, head_embeddings = self.head(x, collect_embeddings=collect_embeddings)  # Shape: [batch_size, fp_size]
+        if collect_embeddings and head_embeddings is not None:
+            for layer_name, embed in head_embeddings.items():
+                embeddings[f'head_{layer_name}'] = embed
 
-        return x
+        if collect_embeddings:
+            return x, embeddings  # Return output and embeddings
+        else:
+            return x  # Return output only
 
-    def step(self, batch: dict, stage: str) -> dict:
+
+    def get_embeddings(self, data):
+
+        _, embeddings = self.forward(data, collect_embeddings=True)
+        return embeddings
+
+    def step(self, batch: dict, stage: Stage) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Perform a single step of training/validation/testing.
 
@@ -72,13 +90,13 @@ class GNNRetrievalModelLarge(RetrievalMassSpecGymModel):
         batch_ptr = batch['batch_ptr']  # Number of candidates per sample, shape: [batch_size]
 
         # Forward pass
-        fp_pred = self.forward(data)  # Shape: [batch_size, fp_size]
+        fp_pred = self.forward(data)
 
         # Compute loss
         loss = self.loss_fn(fp_pred, fp_true)
 
         # Compute similarity scores
-        fp_pred_repeated = fp_pred.repeat_interleave(batch_ptr, dim=0)  # Shape: [total_candidates, fp_size]
-        scores = F.cosine_similarity(fp_pred_repeated, cands)  # Shape: [total_candidates]
+        fp_pred_repeated = fp_pred.repeat_interleave(batch_ptr, dim=0)
+        scores = F.cosine_similarity(fp_pred_repeated, cands)
 
         return {'loss': loss, 'scores': scores}
