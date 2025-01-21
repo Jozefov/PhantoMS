@@ -45,11 +45,7 @@ trainer:
   checkpoint_mode: "min"
   checkpoint_dir: "checkpoints/"
 
-logs:
-  dir: "logs"
-  name: "gnn_retrieval_model_bonus"
-
-experiment_base_name: "experiment"  # Base name for experiments
+experiment_base_name: "name"
 
 wandb:
   project: "PhantoMS_Retrieval"

@@ -140,7 +140,8 @@ dmypy.json
 # MSn datasets
 data/MSn/
 
-# lightning logs
+experiments_run/
+
 notebooks/lightning_logs/
 notebooks/logs/
 notebooks/wandb/
