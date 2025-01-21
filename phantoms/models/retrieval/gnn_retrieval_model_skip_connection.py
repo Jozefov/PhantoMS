@@ -15,8 +15,8 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
     def __init__(
         self,
         hidden_channels: int = 2048,
-        out_channels: int = 4096,  # Fingerprint size
-        node_feature_dim: int = 1039,
+        out_channels: int = 2048,  # Fingerprint size
+        node_feature_dim: int = 1024,
         dropout_rate: float = 0.2,
         bottleneck_factor: float = 1.0,
         num_skipblocks: int = 3,
@@ -26,6 +26,21 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         *args,
         **kwargs
     ):
+        """
+        GNN-based retrieval model with optional skip connections and molecular formula integration.
+
+        Args:
+            hidden_channels (int): Number of hidden channels in all layers except input and output layers.
+            out_channels (int): Dimension of the output fingerprint vector.
+            node_feature_dim (int): Dimension of input node features.
+            dropout_rate (float): Dropout rate.
+            bottleneck_factor (float): Factor to control bottleneck in SkipBlocks.
+            num_skipblocks (int): Number of SkipBlocks in the retrieval head.
+            num_gcn_layers (int): Number of GCN layers.
+            use_formula (bool): Whether to integrate molecular formula information.
+            formula_embedding_dim (int): Dimension for molecular formula encoding.
+        """
+
         super().__init__(*args, **kwargs)
 
         self.use_formula = use_formula
@@ -84,10 +99,9 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         # Pass through GCN layers
         embeddings = {}
         for idx, gcn in enumerate(self.gcn_layers, 1):
-            x = gcn(x, edge_index)
-            if collect_embeddings:
-                x_pooled = global_mean_pool(x, batch)
-                embeddings[f'gcn{idx}'] = x_pooled.detach().cpu()
+            x, gnn_embeddings = gcn(x, edge_index, batch, collect_embeddings=collect_embeddings)
+            if collect_embeddings and gnn_embeddings is not None:
+                embeddings[f'gcn{idx}'] = gnn_embeddings  # e.g., 'gcn1': [batch_size, hidden_channels]
 
         x_pooled = global_mean_pool(x, batch)
 
