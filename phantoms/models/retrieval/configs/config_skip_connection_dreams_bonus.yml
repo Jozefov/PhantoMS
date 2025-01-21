@@ -8,8 +8,8 @@ featurizer:
       embedding_dim: 1024
 
 data:
-  file_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_trees.mgf"
-  file_json: "/Users/macbook/CODE/Majer:MassSpecGym/data/candidates_generation/MassSpecGymMSn_retrieval_candidates_formula.json"
+  spectra_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_trees.mgf"
+  candidates_json: "/Users/macbook/CODE/Majer:MassSpecGym/data/candidates_generation/MassSpecGymMSn_retrieval_candidates_formula.json"
   split_file: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_split.tsv"
   max_allowed_deviation: 0.005
   batch_size: 2
