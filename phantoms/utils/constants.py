@@ -1,0 +1,1 @@
+ELEMENTS = ['C', 'H', 'N', 'O', 'S', 'P', 'Cl', 'Br', 'F', 'I']

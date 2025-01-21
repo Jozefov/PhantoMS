@@ -7,6 +7,8 @@ from phantoms.layers.gcn_layers import GCNLayer
 from phantoms.heads.retrieval_heads import SkipConnectionRetrievalHead
 from phantoms.optimizations.loss_functions import BCEWithLogitsLoss
 from massspecgym.models.retrieval.base import RetrievalMassSpecGymModel
+from phantoms.utils.constants import ELEMENTS
+from typing import List, Optional
 
 class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
     def __init__(
@@ -18,10 +20,15 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         bottleneck_factor: float = 1.0,
         num_skipblocks: int = 3,
         num_gcn_layers: int = 3,
+        use_formula: bool = False,
+        formula_embedding_dim: int = 64,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
+
+        self.use_formula = use_formula
+        self.formula_embedding_dim = formula_embedding_dim
 
         self.num_gcn_layers = num_gcn_layers
 
@@ -32,9 +39,21 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
             self.gcn_layers.append(GCNLayer(in_channels, hidden_channels))
             in_channels = hidden_channels
 
+        # If using formula, define formula encoder
+        if self.use_formula:
+            self.formula_encoder = nn.Sequential(
+                nn.Linear(len(ELEMENTS), self.formula_embedding_dim),
+                nn.ReLU(),
+                nn.Linear(self.formula_embedding_dim, self.formula_embedding_dim),
+                nn.ReLU()
+            )
+            head_input_size = hidden_channels + self.formula_embedding_dim
+        else:
+            head_input_size = hidden_channels
+
         # Define Skip Connection Retrieval Head
         self.head = SkipConnectionRetrievalHead(
-            input_size=hidden_channels,
+            input_size=head_input_size,
             hidden_size=hidden_channels,
             output_size=out_channels,
             bottleneck_factor=bottleneck_factor,
@@ -45,7 +64,20 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         # Define Loss Function
         self.loss_fn = BCEWithLogitsLoss()  # Binary vector prediction
 
-    def forward(self, data, collect_embeddings=False):
+    def forward(self, data, collect_embeddings=False, smiles_batch: Optional[List[str]] = None):
+        """
+        Forward pass to predict molecular fingerprint from spectral tree and (optionally) molecular formula.
+
+        Args:
+            data (torch_geometric.data.Data): Batched spectral trees.
+            collect_embeddings (bool): If True, collect embeddings from each layer.
+            smiles_batch (Optional[List[str]]): List of SMILES strings for the batch. Required if use_formula is True.
+
+        Returns:
+            torch.Tensor: Predicted molecular fingerprints. Shape: [batch_size, fp_size]
+            Optional[dict]: If collect_embeddings is True, returns a dictionary of embeddings.
+        """
+
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
         # Pass through GCN layers
@@ -56,16 +88,33 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
                 x_pooled = global_mean_pool(x, batch)
                 embeddings[f'gcn{idx}'] = x_pooled.detach().cpu()
 
+        x_pooled = global_mean_pool(x, batch)
+
+        if self.use_formula:
+            if smiles_batch is None:
+                raise ValueError("smiles_batch must be provided when use_formula is enabled.")
+            # Convert SMILES to formulas
+            formulas = [self.smiles_to_formula(smiles) for smiles in smiles_batch]
+
+            # Encode formulas
+            formula_encodings = torch.stack([self.encode_formula(formula) for formula in formulas])  # [batch_size, len(ELEMENTS)]
+            formula_encodings = self.formula_encoder(formula_encodings)  # [batch_size, formula_embedding_dim]
+
+            # Concatenate GCN output with formula encodings
+            combined = torch.cat([x_pooled, formula_encodings], dim=1)  # [batch_size, hidden_channels + formula_embedding_dim]
+        else:
+            combined = x_pooled  # [batch_size, hidden_channels]
+
         # Pass through Retrieval Head
-        x, head_embeddings = self.head(x, collect_embeddings=collect_embeddings)  # Shape: [batch_size, fp_size]
+        x, head_embeddings = self.head(combined, collect_embeddings=collect_embeddings)  # [batch_size, fp_size]
         if collect_embeddings and head_embeddings is not None:
             for layer_name, embed in head_embeddings.items():
                 embeddings[f'head_{layer_name}'] = embed
 
         if collect_embeddings:
-            return x, embeddings  # Return output and embeddings
+            return x, embeddings  # [batch_size, fp_size], dict
         else:
-            return x  # Return output only
+            return x
 
 
     def get_embeddings(self, data):
@@ -89,14 +138,19 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         cands = batch['candidates']   # Candidate fingerprints, shape: [total_candidates, fp_size]
         batch_ptr = batch['batch_ptr']  # Number of candidates per sample, shape: [batch_size]
 
-        # Forward pass
-        fp_pred = self.forward(data)
+        if self.use_formula:
+            smiles = batch.get('smiles', None)
+            if smiles is None:
+                raise ValueError("Batch does not contain 'smiles' key required for formula encoding.")
+            fp_pred = self.forward(data, smiles_batch=smiles)  # Shape: [batch_size, fp_size]
+        else:
+            fp_pred = self.forward(data)  # Shape: [batch_size, fp_size]
 
         # Compute loss
         loss = self.loss_fn(fp_pred, fp_true)
 
         # Compute similarity scores
-        fp_pred_repeated = fp_pred.repeat_interleave(batch_ptr, dim=0)
-        scores = F.cosine_similarity(fp_pred_repeated, cands)
+        fp_pred_repeated = fp_pred.repeat_interleave(batch_ptr, dim=0)  # Shape: [total_candidates, fp_size]
+        scores = F.cosine_similarity(fp_pred_repeated, cands)  # Shape: [total_candidates]
 
         return {'loss': loss, 'scores': scores}

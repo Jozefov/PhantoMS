@@ -1,12 +1,13 @@
 # experiments/retrieval/config_retrieval.yaml
 
 featurizer:
-  features: ['binned_peaks']
+  features: ['spectrum_embedding']
   feature_attributes:
-    binned_peaks:
-      max_mz: 1000
-      bin_width: 0.25
-      to_rel_intensities: true
+    spectrum_embedding:
+      path_to_embeddings: '/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/MSn_DreaMS.h5'
+      identifier_col: 'identifiers'
+      embedding_cols: 'embeddings'
+      embedding_dim: 1024
 
 data:
   file_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_trees.mgf"
@@ -19,7 +20,7 @@ data:
 model:
   hidden_channels: 2048  # Updated to 2048 as per your suggestion
   fp_size: 2048
-  node_feature_dim: 4000
+  node_feature_dim: 1024
   dropout_rate: 0.2
   bottleneck_factor: 1.0  # Added to prevent dimension reduction in SkipBlocks
   num_skipblocks: 3        # Added to specify the number of SkipBlocks
@@ -49,7 +50,7 @@ logs:
   dir: "logs"
   name: "gnn_retrieval_model"
 
-experiment_base_name: "skip_first"  # Base name for experiments
+experiment_base_name: "skip_tree"  # Base name for experiments
 
 wandb:
   project: "PhantoMS_Retrieval"
