@@ -11,7 +11,7 @@ featurizer:
 
 data:
   file_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_trees.mgf"
-  file_json: "/Users/macbook/CODE/Majer:MassSpecGym/data/Retrieval/MassSpecGym_retrieval_candidates_mass.json"
+  file_json: "/Users/macbook/CODE/Majer:MassSpecGym/data/candidates_generation/MassSpecGymMSn_retrieval_candidates_mass.json"
   split_file: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_split.tsv"
   max_allowed_deviation: 0.005
   batch_size: 2
@@ -22,9 +22,11 @@ model:
   fp_size: 2048
   node_feature_dim: 1024
   dropout_rate: 0.2
-  bottleneck_factor: 1.0  # Added to prevent dimension reduction in SkipBlocks
-  num_skipblocks: 3        # Added to specify the number of SkipBlocks
-  num_gcn_layers: 3        # Added to dynamically set the number of GCN layers
+  bottleneck_factor: 1.0  # Prevent dimension reduction in SkipBlocks
+  num_skipblocks: 3        # Number of SkipBlocks
+  num_gcn_layers: 3        # Number of GCN layers
+  use_formula: false       # New parameter to enable formula integration
+  formula_embedding_dim: 0  # Dimensionality for formula encoding
 
 metrics:
   at_ks: [1, 5, 20]

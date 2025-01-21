@@ -16,13 +16,13 @@ data:
 
 model:
   hidden_channels: 2048  # Updated to 2048 as per your suggestion
-  fp_size: 4096
+  fp_size: 2048
   node_feature_dim: 1039
   dropout_rate: 0.2
   bottleneck_factor: 1.0  # Prevent dimension reduction in SkipBlocks
   num_skipblocks: 3        # Number of SkipBlocks
   num_gcn_layers: 3        # Number of GCN layers
-  use_formula: false       # New parameter to enable formula integration
+  use_formula: true       # New parameter to enable formula integration
   formula_embedding_dim: 64  # Dimensionality for formula encoding
 
 metrics:

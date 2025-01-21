@@ -8,6 +8,7 @@ from phantoms.heads.retrieval_heads import SkipConnectionRetrievalHead
 from phantoms.optimizations.loss_functions import BCEWithLogitsLoss
 from massspecgym.models.retrieval.base import RetrievalMassSpecGymModel
 from phantoms.utils.constants import ELEMENTS
+from phantoms.utils.data import encode_formula, smiles_to_formula
 from typing import List, Optional
 
 class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
@@ -94,10 +95,10 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
             if smiles_batch is None:
                 raise ValueError("smiles_batch must be provided when use_formula is enabled.")
             # Convert SMILES to formulas
-            formulas = [self.smiles_to_formula(smiles) for smiles in smiles_batch]
+            formulas = [smiles_to_formula(smiles) for smiles in smiles_batch]
 
             # Encode formulas
-            formula_encodings = torch.stack([self.encode_formula(formula) for formula in formulas])  # [batch_size, len(ELEMENTS)]
+            formula_encodings = torch.stack([encode_formula(formula) for formula in formulas])  # [batch_size, len(ELEMENTS)]
             formula_encodings = self.formula_encoder(formula_encodings)  # [batch_size, formula_embedding_dim]
 
             # Concatenate GCN output with formula encodings
