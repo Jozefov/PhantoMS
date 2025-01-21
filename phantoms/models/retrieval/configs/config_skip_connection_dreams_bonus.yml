@@ -17,8 +17,8 @@ data:
 
 model:
   hidden_channels: 2048  # Updated to 2048 as per your suggestion
-  fp_size: 4096
-  node_feature_dim: 1039
+  fp_size: 2048
+  node_feature_dim: 1024
   dropout_rate: 0.2
   bottleneck_factor: 1.0  # Prevent dimension reduction in SkipBlocks
   num_skipblocks: 3        # Number of SkipBlocks
@@ -31,7 +31,7 @@ metrics:
 
 optimizer:
   lr: 0.001
-  weight_decay: 1e-4
+  weight_decay: 0.0001
 
 trainer:
   accelerator: "cpu"  # Change to "gpu" if available

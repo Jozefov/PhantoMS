@@ -132,9 +132,18 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
             return x
 
 
-    def get_embeddings(self, data):
+    def get_embeddings(self, data, smiles_batch: Optional[List[str]] = None):
+        """
+        Extract embeddings from each layer.
 
-        _, embeddings = self.forward(data, collect_embeddings=True)
+        Args:
+            data (dict): Batch of data.
+            smiles_batch (Optional[List[str]]): List of SMILES strings, required if use_formula is True, for bonus task.
+
+        Returns:
+            dict: Dictionary containing embeddings from each layer.
+        """
+        _, embeddings = self.forward(data, collect_embeddings=True, smiles_batch=smiles_batch)
         return embeddings
 
     def step(self, batch: dict, stage: Stage) -> tuple[torch.Tensor, torch.Tensor]:
@@ -154,7 +163,7 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         batch_ptr = batch['batch_ptr']  # Number of candidates per sample, shape: [batch_size]
 
         if self.use_formula:
-            smiles = batch.get('smiles', None)
+            smiles = batch['smiles']
             if smiles is None:
                 raise ValueError("Batch does not contain 'smiles' key required for formula encoding.")
             fp_pred = self.forward(data, smiles_batch=smiles)  # Shape: [batch_size, fp_size]
