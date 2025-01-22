@@ -142,6 +142,8 @@ data/MSn/
 
 experiments_run/
 
+wandb/
+
 notebooks/lightning_logs/
 notebooks/logs/
 notebooks/wandb/
