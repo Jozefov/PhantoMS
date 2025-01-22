@@ -42,9 +42,8 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
     # Initialize Featurizer
     featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
 
-    # Handle different key names for spectra_mgf and file_mgf
-    spectra_mgf = config['data'].get('spectra_mgf') or config['data'].get('file_mgf')
-    candidates_json = config['data'].get('candidates_json') or config['data'].get('file_json')
+    spectra_mgf = config['data'].get('spectra_mgf')
+    candidates_json = config['data'].get('candidates_json')
 
     # Initialize Dataset with specific cut_tree_at_level
     dataset_msn = MSnRetrievalDataset(
@@ -56,7 +55,6 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         max_allowed_deviation=config['data']['max_allowed_deviation']
     )
 
-    # Initialize DataModule with fixed shuffle seed
     data_module_msn = MassSpecDataModule(
         dataset=dataset_msn,
         batch_size=config['data']['batch_size'],
@@ -91,7 +89,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         project=config['wandb']['project'],
         entity=config['wandb']['entity'],
         name=os.path.basename(experiment_folder),
-        log_model="all",
+        log_model=False,
         reinit=True
     )
 
@@ -99,7 +97,6 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
     checkpoint_dir = os.path.join(experiment_folder, 'checkpoints')
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    # Initialize Trainer with both TensorBoard and W&B loggers
     trainer = pl.Trainer(
         accelerator=config['trainer']['accelerator'],
         devices=config['trainer']['devices'],
@@ -127,7 +124,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
     # Test the model
     trainer.test(model, datamodule=data_module_msn)
 
-    # Save the trained model (optional)
+    # Save the trained model
     model_save_path = os.path.join(checkpoint_dir, 'final_model.ckpt')
     trainer.save_checkpoint(model_save_path)
     print(f"Model saved to {model_save_path}")
@@ -179,9 +176,8 @@ def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
     # Initialize Featurizer
     featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
 
-    # Handle different key names for spectra_mgf and file_mgf
-    spectra_mgf = config['data'].get('spectra_mgf') or config['data'].get('file_mgf')
-    candidates_json = config['data'].get('candidates_json') or config['data'].get('file_json')
+    spectra_mgf = config['data'].get('spectra_mgf')
+    candidates_json = config['data'].get('candidates_json')
 
     # Initialize Dataset with specific cut_tree_at_level
     dataset_msn = MSnRetrievalDataset(

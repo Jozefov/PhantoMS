@@ -1,4 +1,3 @@
-# experiments/retrieval/config_retrieval.yaml
 
 featurizer:
   features: ['spectrum_embedding']
@@ -18,15 +17,15 @@ data:
   num_workers: 0
 
 model:
-  hidden_channels: 2048  # Updated to 2048 as per your suggestion
+  hidden_channels: 2048
   fp_size: 2048
   node_feature_dim: 1024
   dropout_rate: 0.2
-  bottleneck_factor: 1.0  # Prevent dimension reduction in SkipBlocks
-  num_skipblocks: 3        # Number of SkipBlocks
-  num_gcn_layers: 3        # Number of GCN layers
-  use_formula: false       # New parameter to enable formula integration
-  formula_embedding_dim: 0  # Dimensionality for formula encoding
+  bottleneck_factor: 1.0
+  num_skipblocks: 3
+  num_gcn_layers: 3
+  use_formula: false
+  formula_embedding_dim: 0
 
 metrics:
   at_ks: [1, 5, 20]
@@ -36,11 +35,11 @@ optimizer:
   weight_decay: 0.0001
 
 trainer:
-  accelerator: "cpu"  # Change to "gpu" if available
+  accelerator: "cpu"
   devices: 1
   max_epochs: 2
   log_every_n_steps: 10
-  limit_train_batches: 2  # Increased to allow logging every 10 steps
+  limit_train_batches: 2
   limit_val_batches: 2
   limit_test_batches: 2
   checkpoint_monitor: "val_loss"

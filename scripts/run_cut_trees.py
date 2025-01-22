@@ -52,8 +52,7 @@ def run_all_experiments(config_dir: str,
 
         # Iterate over each tree level
         for level in cut_tree_levels:
-            # Generate a high-precision timestamp (includes microseconds)
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # e.g., 2025-01-21_17-23-39_123456
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             # Adding a slight sleep to ensure different timestamps
             time.sleep(1.0)
 
