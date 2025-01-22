@@ -2,6 +2,7 @@ from rdkit import Chem
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula
 from phantoms.utils.constants import *
 import re
+import os
 import numpy as np
 import random
 import torch
@@ -62,3 +63,33 @@ def encode_formula(formula: str) -> torch.Tensor:
         # Create a list in the order of ELEMENTS
         formula_vector = [counts[element] for element in ELEMENTS]
         return torch.tensor(formula_vector, dtype=torch.float32)
+
+def save_embeddings(model, dataloader, save_dir):
+    """
+    Extract embeddings from the model for the entire dataset and save them.
+
+    Args:
+        model: Trained model with a get_embeddings method.
+        dataloader: DataLoader for the dataset.
+        save_dir: Directory to save the embeddings.
+    """
+    model.eval()
+    embeddings_dict = {}
+
+    with torch.no_grad():
+        for batch_idx, batch in enumerate(dataloader):
+            data = batch['spec']
+            smiles = batch.get('smiles', None) if model.use_formula else None
+            embeddings = model.get_embeddings(data, smiles_batch=smiles)  # Dict of embeddings
+
+            for layer_name, embed in embeddings.items():
+                if layer_name not in embeddings_dict:
+                    embeddings_dict[layer_name] = []
+                embeddings_dict[layer_name].append(embed.numpy())
+
+    # Concatenate all batches for each layer and save
+    for layer_name, embed_list in embeddings_dict.items():
+        layer_embeddings = np.concatenate(embed_list, axis=0)  # Shape: [total_samples, embedding_dim]
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, f"{layer_name}.npy")
+        np.save(save_path, layer_embeddings)
