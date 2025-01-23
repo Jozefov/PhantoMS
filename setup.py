@@ -13,7 +13,7 @@ setup(
         'pytorch-lightning',
         'torch-geometric',
         'wandb',
-        'massspecgym @ git+https://github.com/Jozefov/MassSpecGymMSn.git@main#egg=massspecgym'
+        # 'massspecgym @ git+ssh://git@github.com/Jozefov/MassSpecGymMSn.git@main#egg=massspecgym'
     ],
     author='Filip Jozefov',
     author_email='your.email@example.com',

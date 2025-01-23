@@ -12,5 +12,5 @@ dependencies:
     - torch-geometric
     - wandb
     - tensorboard
-    - massspecgym[notebooks] @ git+https://github.com/Jozefov/MassSpecGymMSn.git@main#egg=massspecgym
+    - 'massspecgym[notebooks] @ git+ssh://git@github.com/Jozefov/MassSpecGymMSn.git@main'
     - -e .
