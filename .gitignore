@@ -143,6 +143,7 @@ data/MSn/
 experiments_run/
 
 wandb/
+scripts/wandb
 
 notebooks/lightning_logs/
 notebooks/logs/

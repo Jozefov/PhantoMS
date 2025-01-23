@@ -10,4 +10,7 @@ dependencies:
     - torch
     - pytorch-lightning
     - torch-geometric
-    - massspecgym @ git+https://github.com/Jozefov/MassSpecGymMSn.git@main#egg=massspecgym
+    - wandb
+    - tensorboard
+    - massspecgym[notebooks] @ git+https://github.com/Jozefov/MassSpecGymMSn.git@main#egg=massspecgym
+    - -e .

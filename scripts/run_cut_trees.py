@@ -103,7 +103,7 @@ if __name__ == "__main__":
     ]
     tree_levels = [0, 1, 2, 3]
 
-    wandb_project_name = 'something_trial3'
+    wandb_project_name = 'something_trial4'
 
     # Authenticate with W&B
     print("Logging into Weights & Biases...")
