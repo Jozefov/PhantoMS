@@ -34,24 +34,26 @@ class SkipBlock(nn.Module):
             name='weight', dim=0
         )
 
+
     def forward(self, x, collect_embeddings=False):
         identity = x
         hidden = self.batchNorm1(x)
         hidden = self.relu1(hidden)
         hidden = self.dropout1(hidden)
-        hidden = self.hidden1(hidden)
+        hidden1 = self.hidden1(hidden)  # First hidden layer
 
-        hidden = self.batchNorm2(hidden)
+        hidden = self.batchNorm2(hidden1)
         hidden = self.relu2(hidden)
         hidden = self.dropout2(hidden)
-        hidden = self.hidden2(hidden)
+        hidden2 = self.hidden2(hidden)  # Second hidden layer
 
-        out = hidden + identity  # Skip connection
+        out = hidden2 + identity  # Skip connection
 
         if collect_embeddings:
-            return out, hidden.detach().cpu()  # Return output and intermediate embedding
+            # Return a dictionary of embeddings
+            return out, {'hidden1': hidden1.detach().cpu(), 'hidden2': hidden2.detach().cpu()}
         else:
-            return out, None  # Return output and no embedding
+            return out, None
 
 
 

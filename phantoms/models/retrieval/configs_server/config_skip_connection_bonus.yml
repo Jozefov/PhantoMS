@@ -7,7 +7,7 @@ featurizer:
       to_rel_intensities: true
 
 data:
-  spectra_mgf: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/min_sample_trees.mgf"
+  spectra_mgf: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/20241211_msn_library_pos_all_lib_MSn.mgf"
   candidates_json: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/MassSpecGymMSn_retrieval_candidates_formula.json"
   split_file: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/20241211_split.tsv"
   max_allowed_deviation: 0.005
