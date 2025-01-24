@@ -9,28 +9,33 @@
 #SBATCH --error=CutTreesValidation_%j.err   # Standard error log
 
 # -------------------------------
-# 1. Load Necessary Modules
+# 1. Purge all loaded modules
 # -------------------------------
-ml purge                                 # Remove all loaded modules
-ml Anaconda3/2021.05                     # Load Anaconda module
-ml CUDA/11.3                             # Load CUDA module (adjust version if needed)
+module --force purge
 
 # -------------------------------
-# 2. Activate Conda Environment
+# 2. Initialize Conda
 # -------------------------------
-source activate phantoms_env              # Activate your Conda environment
+# Source the conda.sh script to use conda in the script
+source /scratch/project/open-26-5/jozefov_147/jozefov_147/miniconda3/etc/profile.d/conda.sh
+
+# Activate your Conda environment
+conda activate phantoms_env
 
 # -------------------------------
 # 3. Set Environment Variables
 # -------------------------------
-export WANDB_API_KEY=your_actual_api_key_here  # Replace with your actual W&B API key
+export WANDB_API_KEY=${WANDB_API_KEY}
+
+# Optional: Set CUDA_VISIBLE_DEVICES if you need to specify GPUs
+# export CUDA_VISIBLE_DEVICES=0
 
 # -------------------------------
 # 4. Navigate to Project Directory
 # -------------------------------
-cd /scratch/project/open-26-5/jozefov_147/PhantoMS  # Change to your project directory
+cd /scratch/project/open-26-5/jozefov_147/PhantoMS
 
 # -------------------------------
 # 5. Execute Training Script
 # -------------------------------
-srun --export=ALL,WANDB_API_KEY=$WANDB_API_KEY --preserve-env python3 scripts/run_cut_trees_server.py
+srun --export=ALL --preserve-env python3 scripts/run_cut_trees_server.py
