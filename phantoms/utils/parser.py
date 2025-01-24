@@ -104,6 +104,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         num_nodes=config['trainer'].get('num_nodes', 1),
         strategy='ddp' if config['trainer']['accelerator'] == 'ddp' else 'auto',
         max_epochs=config['trainer']['max_epochs'],
+        check_val_every_n_epoch=config['trainer']['check_val_every_n_epoch'],
         logger=[tb_logger, wandb_logger],
         log_every_n_steps=config['trainer']['log_every_n_steps'],
         limit_train_batches=config['trainer']['limit_train_batches'],
