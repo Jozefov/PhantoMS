@@ -14,6 +14,7 @@ data:
   max_allowed_deviation: 0.005
   batch_size: 2
   num_workers: 0
+  hierarchical_tree: false
 
 model:
   hidden_channels: 2048
@@ -46,8 +47,8 @@ trainer:
   checkpoint_mode: "min"
   checkpoint_dir: "checkpoints/"
 
-experiment_base_name: "name"
+experiment_base_name: "name_new_embeddings"
 
 wandb:
-  project: "PhantoMS_Retrieval"
+  project: "PhantoMS_Retrieval_new_embeddings"
   entity: "jozefov-iocb-prague"

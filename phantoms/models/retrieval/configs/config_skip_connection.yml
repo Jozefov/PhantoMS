@@ -13,6 +13,7 @@ data:
   max_allowed_deviation: 0.005
   batch_size: 2
   num_workers: 0
+  hierarchical_tree: false
 
 model:
   hidden_channels: 2048
