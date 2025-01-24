@@ -100,6 +100,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
     trainer = pl.Trainer(
         accelerator=config['trainer']['accelerator'],
         devices=config['trainer']['devices'],
+        num_nodes=config['trainer'].get('num_nodes', 1),
         max_epochs=config['trainer']['max_epochs'],
         logger=[tb_logger, wandb_logger],
         log_every_n_steps=config['trainer']['log_every_n_steps'],

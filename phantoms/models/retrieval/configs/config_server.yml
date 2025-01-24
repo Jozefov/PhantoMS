@@ -1,0 +1,53 @@
+featurizer:
+  features: ['binned_peaks']
+  feature_attributes:
+    binned_peaks:
+      max_mz: 1000
+      bin_width: 0.25
+      to_rel_intensities: true
+
+data:
+  spectra_mgf: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/min_sample_trees.mgf"
+  candidates_json: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/MassSpecGymMSn_retrieval_candidates_mass.json"
+  split_file: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/20241211_split.tsv"
+  max_allowed_deviation: 0.005
+  batch_size: 50
+  num_workers: 15
+
+model:
+  hidden_channels: 2048
+  fp_size: 2048
+  node_feature_dim: 4000
+  dropout_rate: 0.2
+  bottleneck_factor: 1.0
+  num_skipblocks: 3
+  num_gcn_layers: 3
+  use_formula: false
+  formula_embedding_dim: 0
+
+metrics:
+  at_ks: [1, 5, 20]
+
+optimizer:
+  lr: 0.001
+  weight_decay: 0.0001
+
+trainer:
+  accelerator: "gpu"
+  devices: 1
+  num_nodes: 1
+  max_epochs: 2
+  log_every_n_steps: 10
+  limit_train_batches: 2
+  limit_val_batches: 2
+  limit_test_batches: 2
+  checkpoint_monitor: "val_loss"
+  save_top_k: 3
+  checkpoint_mode: "min"
+  checkpoint_dir: "checkpoints/"
+
+experiment_base_name: "name"
+
+wandb:
+  project: "server_test"
+  entity: "jozefov-iocb-prague"
