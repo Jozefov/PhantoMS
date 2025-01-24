@@ -100,9 +100,10 @@ class SkipConnectionRetrievalHead(nn.Module):
 
         # Skip blocks
         for idx, skipblock in enumerate(self.skipblocks, 1):
-            x, skip_embed = skipblock(x, collect_embeddings=collect_embeddings)
-            if collect_embeddings and skip_embed is not None:
-                embeddings[f'skipblock_{idx}'] = skip_embed
+            x, skip_embeds = skipblock(x, collect_embeddings=collect_embeddings)
+            if collect_embeddings and skip_embeds is not None:
+                for embed_name, embed in skip_embeds.items():
+                    embeddings[f'skipblock_{idx}_{embed_name}'] = embed
 
         # Final layers
         x = self.fc_final(x)
