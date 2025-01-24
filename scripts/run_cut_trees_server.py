@@ -101,7 +101,7 @@ if __name__ == "__main__":
     ]
     tree_levels = [0, 1, 2, 3]
 
-    wandb_project_name = 'server_test2'
+    wandb_project_name = 'full_data_cut_tress_1'
 
     # Authenticate with W&B
     print("Logging into Weights & Biases...")
