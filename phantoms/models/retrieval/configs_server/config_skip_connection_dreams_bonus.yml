@@ -13,7 +13,7 @@ data:
   split_file: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/20241211_split.tsv"
   max_allowed_deviation: 0.005
   batch_size: 2
-  num_workers: 0
+  num_workers: 15
 
 model:
   hidden_channels: 2048

@@ -111,12 +111,13 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
             # Convert SMILES to formulas
             formulas = [smiles_to_formula(smiles) for smiles in smiles_batch]
 
-            # Encode formulas
-            formula_encodings = torch.stack([encode_formula(formula) for formula in formulas])  # [batch_size, len(ELEMENTS)]
+            # Encode formulas and move to the same device as x
+            formula_encodings = torch.stack([encode_formula(formula) for formula in formulas]).to(x.device)
             formula_encodings = self.formula_encoder(formula_encodings)  # [batch_size, formula_embedding_dim]
 
             # Concatenate GCN output with formula encodings
-            combined = torch.cat([x_pooled, formula_encodings], dim=1)  # [batch_size, hidden_channels + formula_embedding_dim]
+            combined = torch.cat([x_pooled, formula_encodings],
+                                 dim=1)  # [batch_size, hidden_channels + formula_embedding_dim]
         else:
             combined = x_pooled  # [batch_size, hidden_channels]
 
