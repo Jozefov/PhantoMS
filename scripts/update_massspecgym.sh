@@ -2,7 +2,7 @@
 echo "Removing massspecgym"
 pip uninstall massspecgym -y
 echo "Updating massspecgym from GitHub..."
-pip install --upgrade git+https://github.com/Jozefov/MassSpecGymMSn.git@main#egg=massspecgym
+pip install --upgrade git+ssh://git@github.com/Jozefov/MassSpecGymMSn.git@main
 if [ $? -eq 0 ]; then
     echo "massspecgym has been updated successfully."
 else
