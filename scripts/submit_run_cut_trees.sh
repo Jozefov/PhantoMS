@@ -4,7 +4,7 @@
 #SBATCH --partition=qgpu                    # Partition name (qgpu for GPU jobs)
 #SBATCH --gpus=3                            # Number of GPUs required
 #SBATCH --nodes=1                           # Number of nodes
-#SBATCH --time=4:00:00                      # Time limit hrs:min:sec
+#SBATCH --time=48:00:00                     # Time limit hrs:min:sec
 #SBATCH --output=CutTreesValidation_%j.out  # Standard output log
 #SBATCH --error=CutTreesValidation_%j.err   # Standard error log
 
