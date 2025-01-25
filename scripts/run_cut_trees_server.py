@@ -91,7 +91,7 @@ def run_all_experiments(config_dir: str,
 if __name__ == "__main__":
     # Define parameters
     config_directory = '/scratch/project/open-26-5/jozefov_147/PhantoMS/phantoms/models/retrieval/configs_server'
-    experiment_parent_directory = '/scratch/project/open-26-5/jozefov_147/PhantoMS/experiments_run/cut_all_trees2'
+    experiment_parent_directory = '/scratch/project/open-26-5/jozefov_147/PhantoMS/experiments_run/full_data_cut_tress_4'
 
     configuration_files = [
         'config_skip_connection.yml',
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     ]
     tree_levels = [0, 1, 2, 3]
 
-    wandb_project_name = 'full_data_cut_tress_1'
+    wandb_project_name = 'full_data_cut_tress_4'
 
     # Authenticate with W&B
     print("Logging into Weights & Biases...")

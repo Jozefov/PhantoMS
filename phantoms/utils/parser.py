@@ -102,7 +102,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         accelerator=config['trainer']['accelerator'],
         devices=config['trainer']['devices'],
         num_nodes=config['trainer'].get('num_nodes', 1),
-        strategy='ddp' if config['trainer']['accelerator'] == 'ddp' else 'auto',
+        strategy=config['trainer'].get('strategy', 'auto'),  # Read strategy from config
         max_epochs=config['trainer']['max_epochs'],
         check_val_every_n_epoch=config['trainer']['check_val_every_n_epoch'],
         logger=[tb_logger, wandb_logger],
