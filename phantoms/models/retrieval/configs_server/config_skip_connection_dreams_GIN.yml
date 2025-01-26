@@ -26,6 +26,7 @@ model:
   bottleneck_factor: 1.0
   num_skipblocks: 4
   num_gcn_layers: 3
+  gnn_layer_type: 'GINConv'
   use_formula: false
   formula_embedding_dim: 0
 

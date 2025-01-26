@@ -12,8 +12,9 @@ data:
   split_file: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/20241211_split.tsv"
   max_allowed_deviation: 0.005
   batch_size: 32
-  num_workers: 15
+  num_workers: -1
   hierarchical_tree: false
+  pin_memory: true
 
 model:
   hidden_channels: 2048
@@ -35,11 +36,11 @@ optimizer:
 
 trainer:
   accelerator: "cuda"                  # Use GPU
-  devices: 3                          # Number of GPUs per node
+  devices: 8                          # Number of GPUs per node
   num_nodes: 1                        # Number of nodes
   max_epochs: 30                      # Train for exactly 30 epochs
-  log_every_n_steps: 50               # Logging frequency
-  check_val_every_n_epoch: 3          # Validate every 3 epochs
+  log_every_n_steps: 20               # Logging frequency
+  check_val_every_n_epoch: 5          # Validate every 3 epochs
   limit_train_batches: 1.0            # Use 100% of training data
   limit_val_batches: 1.0
   limit_test_batches: 1.0

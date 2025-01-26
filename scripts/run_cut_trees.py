@@ -93,17 +93,16 @@ def run_all_experiments(config_dir: str,
 if __name__ == "__main__":
     # Define parameters
     config_directory = '/Users/macbook/CODE/PhantoMS/phantoms/models/retrieval/configs'
-    experiment_parent_directory = '/Users/macbook/CODE/PhantoMS/experiments_run/all_cut_trial'
+    experiment_parent_directory = '/Users/macbook/CODE/PhantoMS/experiments_run/new_gnn'
 
     configuration_files = [
-        'config_skip_connection.yml',
-        'config_skip_connection_bonus.yml',
-        'config_skip_connection_dreams.yml',
-        'config_skip_connection_dreams_bonus.yml'
+        'config_skip_connection_dreams_GAT.yml',
+        'config_skip_connection_dreams_GIN.yml',
+        'config_skip_connection_dreams_SAGE.yml',
     ]
-    tree_levels = [0, 1, 2, 3]
+    tree_levels = [3]
 
-    wandb_project_name = 'something_trial4'
+    wandb_project_name = 'new_gnn'
 
     # Authenticate with W&B
     print("Logging into Weights & Biases...")

@@ -3,13 +3,14 @@ import torch.nn.functional as F
 import torch.nn as nn
 from massspecgym.models.base import Stage
 from torch_geometric.nn import global_mean_pool
-from phantoms.layers.gcn_layers import GCNLayer
+from phantoms.layers.gcn_layers import GCNLayer, GATLayer, GINLayer, SAGELayer
 from phantoms.heads.retrieval_heads import SkipConnectionRetrievalHead
-from phantoms.optimizations.loss_functions import BCEWithLogitsLoss
+from phantoms.optimizations.loss_functions import BCEWithLogitsLoss, MSELoss
 from massspecgym.models.retrieval.base import RetrievalMassSpecGymModel
 from phantoms.utils.constants import ELEMENTS
 from phantoms.utils.data import encode_formula, smiles_to_formula
 from typing import List, Optional
+
 
 class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
     def __init__(
@@ -23,11 +24,13 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         num_gcn_layers: int = 3,
         use_formula: bool = False,
         formula_embedding_dim: int = 64,
+        gnn_layer_type: str = 'GCNConv',
+        log_only_loss_at_stages: Optional[list] = [Stage.TRAIN],
         *args,
         **kwargs
     ):
         """
-        GNN-based retrieval model with optional skip connections and molecular formula integration.
+        GNN-based retrieval model with dynamic GNN layers, optional skip connections, and molecular formula integration.
 
         Args:
             hidden_channels (int): Number of hidden channels in all layers except input and output layers.
@@ -39,20 +42,34 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
             num_gcn_layers (int): Number of GCN layers.
             use_formula (bool): Whether to integrate molecular formula information.
             formula_embedding_dim (int): Dimension for molecular formula encoding.
+            gnn_layer_type (str): Type of GNN layer ('GCNConv', 'GATConv', 'GINConv', 'SAGEConv').
+            log_only_loss_at_stages (Optional[list]): Stages during which only loss is logged.
         """
 
-        super().__init__(*args, **kwargs)
+        super().__init__(log_only_loss_at_stages=log_only_loss_at_stages, *args, **kwargs)
 
         self.use_formula = use_formula
         self.formula_embedding_dim = formula_embedding_dim
-
         self.num_gcn_layers = num_gcn_layers
+        self.gnn_layer_type = gnn_layer_type
+
+        layer_mapping = {
+            'GCNConv': GCNLayer,
+            'GATConv': GATLayer,
+            'GINConv': GINLayer,
+            'SAGEConv': SAGELayer
+        }
+
+        if self.gnn_layer_type not in layer_mapping:
+            raise ValueError(f"Unsupported gnn_layer_type '{self.gnn_layer_type}'. Supported types: {list(layer_mapping.keys())}")
+
+        LayerClass = layer_mapping[self.gnn_layer_type]
 
         # Define GCN Layers dynamically
         self.gcn_layers = nn.ModuleList()
         in_channels = node_feature_dim
         for i in range(num_gcn_layers):
-            self.gcn_layers.append(GCNLayer(in_channels, hidden_channels))
+            self.gcn_layers.append(LayerClass(in_channels, hidden_channels))
             in_channels = hidden_channels
 
         # If using formula, define formula encoder
@@ -78,7 +95,7 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         )
 
         # Define Loss Function
-        self.loss_fn = BCEWithLogitsLoss()  # Binary vector prediction
+        self.loss_fn = MSELoss()
 
     def forward(self, data, collect_embeddings=False, smiles_batch: Optional[List[str]] = None):
         """

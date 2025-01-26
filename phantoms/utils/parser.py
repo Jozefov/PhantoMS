@@ -61,6 +61,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         batch_size=config['data']['batch_size'],
         split_pth=config['data']['split_file'],
         num_workers=config['data']['num_workers'],
+        pin_memory = config['data'].get('pin_memory', True),
     )
 
     # Initialize Model
@@ -74,6 +75,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         num_gcn_layers=config['model'].get('num_gcn_layers', 3),
         use_formula=config['model'].get('use_formula', False),
         formula_embedding_dim=config['model'].get('formula_embedding_dim', 64),
+        gnn_layer_type=config['model'].get('gnn_layer_type', 'GCNConv'),
         at_ks=config['metrics']['at_ks'],
         lr=config['optimizer']['lr'],
         weight_decay=config['optimizer']['weight_decay']
@@ -104,7 +106,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         num_nodes=config['trainer'].get('num_nodes', 1),
         strategy=config['trainer'].get('strategy', 'auto'),  # Read strategy from config
         max_epochs=config['trainer']['max_epochs'],
-        check_val_every_n_epoch=config['trainer']['check_val_every_n_epoch'],
+        check_val_every_n_epoch=config['trainer'].get('check_val_every_n_epoch', 1),
         logger=[tb_logger, wandb_logger],
         log_every_n_steps=config['trainer']['log_every_n_steps'],
         limit_train_batches=config['trainer']['limit_train_batches'],
@@ -171,6 +173,7 @@ def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
         num_gcn_layers=config['model'].get('num_gcn_layers', 3),
         use_formula=config['model'].get('use_formula', False),
         formula_embedding_dim=config['model'].get('formula_embedding_dim', 64),
+        gnn_layer_type=config['model'].get('gnn_layer_type', 'GCNConv'),
         at_ks=config['metrics']['at_ks'],
         lr=config['optimizer']['lr'],
         weight_decay=config['optimizer']['weight_decay']
@@ -200,6 +203,7 @@ def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
         batch_size=config['data']['batch_size'],
         split_pth=config['data']['split_file'],
         num_workers=config['data']['num_workers'],
+        pin_memory=config['data'].get('pin_memory', True),
     )
 
     # Prepare and setup the test data

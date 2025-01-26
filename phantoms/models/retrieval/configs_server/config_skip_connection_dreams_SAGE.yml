@@ -26,6 +26,7 @@ model:
   bottleneck_factor: 1.0
   num_skipblocks: 4
   num_gcn_layers: 3
+  gnn_layer_type: 'SAGEConv'
   use_formula: false
   formula_embedding_dim: 0
 
@@ -37,7 +38,7 @@ optimizer:
   weight_decay: 0.0001
 
 trainer:
-  accelerator: "cuda"                  # Use GPU
+  accelerator: "cuda"                 # Use GPU
   devices: 8                          # Number of GPUs per node
   num_nodes: 1                        # Number of nodes
   max_epochs: 30                      # Train for exactly 30 epochs

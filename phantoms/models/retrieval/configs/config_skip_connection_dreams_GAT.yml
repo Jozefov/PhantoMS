@@ -1,0 +1,56 @@
+
+featurizer:
+  features: ['spectrum_embedding']
+  feature_attributes:
+    spectrum_embedding:
+      path_to_embeddings: '/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/MSn_DreaMS.h5'
+      identifier_col: 'identifiers'
+      embedding_cols: 'embeddings'
+      embedding_dim: 1024
+
+data:
+  spectra_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_trees.mgf"
+  candidates_json: "/Users/macbook/CODE/Majer:MassSpecGym/data/candidates_generation/MassSpecGymMSn_retrieval_candidates_mass.json"
+  split_file: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_split.tsv"
+  max_allowed_deviation: 0.005
+  batch_size: 2
+  num_workers: 0
+  hierarchical_tree: false
+
+model:
+  hidden_channels: 2048
+  fp_size: 2048
+  node_feature_dim: 1024
+  dropout_rate: 0.2
+  bottleneck_factor: 1.0
+  num_skipblocks: 3
+  num_gcn_layers: 3
+  gnn_layer_type: 'GATConv'
+  use_formula: false
+  formula_embedding_dim: 0
+
+metrics:
+  at_ks: [1, 5, 20]
+
+optimizer:
+  lr: 0.001
+  weight_decay: 0.0001
+
+trainer:
+  accelerator: "cpu"
+  devices: 1
+  max_epochs: 2
+  log_every_n_steps: 10
+  limit_train_batches: 2
+  limit_val_batches: 2
+  limit_test_batches: 2
+  checkpoint_monitor: "val_loss"
+  save_top_k: 3
+  checkpoint_mode: "min"
+  checkpoint_dir: "checkpoints/"
+
+experiment_base_name: "name"
+
+wandb:
+  project: "PhantoMS_Retrieval"
+  entity: "jozefov-iocb-prague"
