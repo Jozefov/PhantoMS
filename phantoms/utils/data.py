@@ -6,7 +6,7 @@ import os
 import numpy as np
 import random
 import torch
-
+import selfies as sf
 
 def set_global_seeds(seed: int = 42):
     """
@@ -93,3 +93,17 @@ def save_embeddings(model, dataloader, save_dir):
         os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, f"{layer_name}.npy")
         np.save(save_path, layer_embeddings)
+
+
+def smiles_to_selfies(smiles: str) -> str:
+    """
+    Converts a SMILES string to a SELFIES string.
+
+    Args:
+        smiles (str): A SMILES string.
+
+    Returns:
+        str: The corresponding SELFIES string.
+    """
+    selfies_str = sf.encoder(smiles, strict=False)
+    return selfies_str
