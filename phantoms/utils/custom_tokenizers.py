@@ -1,9 +1,10 @@
 import typing as T
-from tokenizers import Tokenizer, processors, models, trainers
+from tokenizers import Tokenizer, models, trainers
 from tokenizers.pre_tokenizers import ByteLevel
 from tokenizers.decoders import ByteLevel as ByteLevelDecoder
 from tokenizers.processors import TemplateProcessing
 from phantoms.utils.constants import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN
+
 
 class ByteBPETokenizerWithSpecialTokens:
     def __init__(
@@ -171,6 +172,15 @@ class ByteBPETokenizerWithSpecialTokens:
             int: Vocabulary size.
         """
         return self.tokenizer.get_vocab_size()
+
+    def get_vocab(self) -> T.Dict[str, int]:
+        """
+        Get the tokenizer's vocabulary.
+
+        Returns:
+            Dict[str, int]: A dictionary mapping tokens to their corresponding IDs.
+        """
+        return self.tokenizer.get_vocab()
 
     def token_to_id(self, token: str) -> int:
         """
