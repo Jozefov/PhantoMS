@@ -117,7 +117,9 @@ class ByteBPETokenizerWithSpecialTokens:
         Returns:
             List[int]: List of token IDs.
         """
+        # print(f"[ENCODE] Input text: {text}")
         encoding = self.tokenizer.encode(text, add_special_tokens=add_special_tokens)
+        # print(f"[ENCODE] Token IDs: {encoding.ids}")
         return encoding.ids
 
     def decode(self, token_ids: T.List[int], skip_special_tokens: bool = True) -> str:
@@ -131,7 +133,10 @@ class ByteBPETokenizerWithSpecialTokens:
         Returns:
             str: The decoded string (SMILES or SELFIES).
         """
-        return self.tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
+        # print(f"[DECODE] Decoding token IDs: {token_ids} (skip_special_tokens={skip_special_tokens})")
+        decoded_text = self.tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
+        # print(f"[DECODE] Decoded text: {decoded_text}")
+        return decoded_text
 
     def encode_batch(
         self, texts: T.List[str], add_special_tokens: bool = True
@@ -146,8 +151,12 @@ class ByteBPETokenizerWithSpecialTokens:
         Returns:
             List[List[int]]: List of token ID lists.
         """
+        # print(f"[ENCODE_BATCH] Input texts: {texts}")
         encodings = self.tokenizer.encode_batch(texts, add_special_tokens=add_special_tokens)
-        return [enc.ids for enc in encodings]
+        token_ids_batch = [enc.ids for enc in encodings]
+        # print(f"[ENCODE_BATCH] Token IDs batch: {token_ids_batch}")
+        return token_ids_batch
+
 
     def decode_batch(
         self, token_ids_batch: T.List[T.List[int]], skip_special_tokens: bool = True
@@ -162,7 +171,10 @@ class ByteBPETokenizerWithSpecialTokens:
         Returns:
             List[str]: List of decoded strings (SMILES or SELFIES).
         """
-        return [self.decode(ids, skip_special_tokens=skip_special_tokens) for ids in token_ids_batch]
+        # print(f"[DECODE_BATCH] Decoding batch: {token_ids_batch}")
+        decoded_texts = [self.decode(ids, skip_special_tokens=skip_special_tokens) for ids in token_ids_batch]
+        # print(f"[DECODE_BATCH] Decoded texts: {decoded_texts}")
+        return decoded_texts
 
     def get_vocab_size(self) -> int:
         """
@@ -171,7 +183,9 @@ class ByteBPETokenizerWithSpecialTokens:
         Returns:
             int: Vocabulary size.
         """
-        return self.tokenizer.get_vocab_size()
+        vocab_size = self.tokenizer.get_vocab_size()
+        # print(f"[VOCAB] Vocabulary size: {vocab_size}")
+        return vocab_size
 
     def get_vocab(self) -> T.Dict[str, int]:
         """
@@ -180,7 +194,9 @@ class ByteBPETokenizerWithSpecialTokens:
         Returns:
             Dict[str, int]: A dictionary mapping tokens to their corresponding IDs.
         """
-        return self.tokenizer.get_vocab()
+        vocab = self.tokenizer.get_vocab()
+        # print(f"[VOCAB] Vocabulary: {vocab}")
+        return vocab
 
     def token_to_id(self, token: str) -> int:
         """
@@ -192,7 +208,9 @@ class ByteBPETokenizerWithSpecialTokens:
         Returns:
             int: The token ID.
         """
-        return self.tokenizer.token_to_id(token)
+        token_id = self.tokenizer.token_to_id(token)
+        # print(f"[TOKEN_TO_ID] Token: {token} -> ID: {token_id}")
+        return token_id
 
     def id_to_token(self, id_: int) -> str:
         """
@@ -204,4 +222,6 @@ class ByteBPETokenizerWithSpecialTokens:
         Returns:
             str: The corresponding token.
         """
-        return self.tokenizer.id_to_token(id_)
+        token = self.tokenizer.id_to_token(id_)
+        # print(f"[ID_TO_TOKEN] ID: {id_} -> Token: {token}")
+        return token
