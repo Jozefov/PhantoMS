@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from torch.nn import TransformerDecoder, TransformerDecoderLayer
-from phantoms.models.denovo.positional_encoding import PositionalEncoding  # e.g., imported from a shared module
+from phantoms.models.denovo.positional_encoding import PositionalEncoding
 
 class MoleculeDecoder(pl.LightningModule):
     def __init__(self, vocab_size: int, d_model: int = 1024, nhead: int = 4,
