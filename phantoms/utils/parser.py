@@ -7,18 +7,17 @@ import wandb
 import torch
 import pytorch_lightning as pl
 from datetime import datetime
+import pandas as pd
 
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 from phantoms.callbacks.freeze_decoder import FreezeDecoderCallback
-
 from massspecgym.data.data_module import MassSpecDataModule
 from massspecgym.featurize import SpectrumFeaturizer
 from massspecgym.data.datasets import MSnRetrievalDataset, MSnDataset
 from massspecgym.data.transforms import MolFingerprinter
-
 from phantoms.utils.custom_tokenizers import ByteBPETokenizerWithSpecialTokens
 
-# Import models.
+# Import models for retrieval, de novo and decoder tasks.
 from phantoms.models.retrieval.gnn_retrieval_model_skip_connection import GNNRetrievalSkipConnections
 from phantoms.models.denovo.GATDeNovoTransformer import GATDeNovoTransformer
 from phantoms.models.denovo.molecule_decoder import MoleculeDecoder
@@ -38,10 +37,8 @@ def validate_config(config):
 def train_model(config, cut_tree_level, experiment_folder, config_file_path):
     print(f"\nStarting training for {experiment_folder}")
     set_global_seeds(config.get("seed", 42))
-
     featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
-
-    task = config.get("task", "retrieval")  # "retrieval", "denovo", or "decoder"
+    task = config.get("task", "retrieval")  # possible values: "retrieval", "denovo", "decoder", "tokenizer"
 
     if task == "retrieval":
         print("Using retrieval task/model.")
@@ -76,6 +73,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         tsv_path = config['data'].get('molecule_tsv')
         if tsv_path is None:
             raise ValueError("For decoder training, 'molecule_tsv' must be provided in config['data'].")
+        # Use the TSV file (which must have a column named "smiles") with the MoleculeTextDataset.
         tokenizer_path = config['model'].get('smiles_tokenizer_path')
         if tokenizer_path is None:
             raise ValueError("For decoder training, 'smiles_tokenizer_path' must be provided in config['model'].")
@@ -86,12 +84,32 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
         model = MoleculeDecoder(
             vocab_size=vocab_size,
             d_model=config['model'].get('d_model', 1024),
-            nhead=config['model'].get('nhead', 8),
+            nhead=config['model'].get('nhead', 4),
             num_decoder_layers=config['model'].get('num_decoder_layers', 4),
             dropout=config['model'].get('dropout_rate', 0.1),
             pad_token_id=tokenizer.token_to_id(config.get('pad_token', 'PAD')),
             max_len=config['model'].get('max_len', 200)
         )
+    elif task == "tokenizer":
+        print("Training tokenizer from TSV file.")
+        tsv_path = config['data'].get('molecule_tsv')
+        if tsv_path is None:
+            raise ValueError("For tokenizer training, 'molecule_tsv' must be provided in config['data'].")
+        # Read the TSV file using pandas to extract the smiles list.
+        import pandas as pd
+        df = pd.read_csv(tsv_path, sep="\t")
+        smiles_list = df["smiles"].tolist()
+        tokenizer = ByteBPETokenizerWithSpecialTokens(max_len=config['model'].get('max_len', 200))
+        SMILES_TOKENIZER_SAVE_PATH = config['model'].get('smiles_tokenizer_save_path', "smiles_tokenizer.json")
+        tokenizer.train(
+            texts=smiles_list,
+            vocab_size=config['model'].get('vocab_size', 1000),
+            min_frequency=config['model'].get('min_frequency', 2),
+            save_path=SMILES_TOKENIZER_SAVE_PATH,
+            show_progress=True
+        )
+        print("Tokenizer training complete.")
+        return  # Exit after training tokenizer.
     elif task == "denovo":
         print("Using de novo task/model.")
         spectra_mgf = config['data'].get('spectra_mgf')
@@ -286,5 +304,3 @@ def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
     test_loader = data_module.test_dataloader()
     save_embeddings(model, test_loader, embeddings_save_dir)
     print(f"Embeddings saved to {embeddings_save_dir}")
-
-
