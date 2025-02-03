@@ -28,58 +28,78 @@ def validate_config(config):
 
 
 def train_model(config, cut_tree_level, experiment_folder, config_file_path):
-    """
-    Train a single model based on the provided configuration and tree level.
-
-    Args:
-        config (dict): Configuration dictionary.
-        cut_tree_level (int): The tree depth level for the experiment.
-        experiment_folder (str): Path to the experiment's unique folder.
-        config_file_path (str): Path to the original config file for copying.
-    """
     print(f"\nStarting training for {experiment_folder}")
+    # Initialize global seeds for reproducibility
+    set_global_seeds(config.get("seed", 42))
 
     # Initialize Featurizer
     featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
 
-    spectra_mgf = config['data'].get('spectra_mgf')
-    candidates_json = config['data'].get('candidates_json')
+    # Determine which task/model to run
+    task = config.get("task", "retrieval")  # default to retrieval if not provided
 
-    # Initialize Dataset with specific cut_tree_at_level
-    dataset_msn = MSnRetrievalDataset(
-        pth=spectra_mgf,
-        candidates_pth=candidates_json,
-        featurizer=featurizer,
-        mol_transform=MolFingerprinter(fp_size=config['model']['fp_size']),
-        cut_tree_at_level=cut_tree_level,
-        max_allowed_deviation=config['data']['max_allowed_deviation'],
-        hierarchical_tree=config['data']['hierarchical_tree'],
-    )
-
-    data_module_msn = MassSpecDataModule(
-        dataset=dataset_msn,
-        batch_size=config['data']['batch_size'],
-        split_pth=config['data']['split_file'],
-        num_workers=config['data']['num_workers'],
-        pin_memory = config['data'].get('pin_memory', True),
-    )
-
-    # Initialize Model
-    model = GNNRetrievalSkipConnections(
-        hidden_channels=config['model']['hidden_channels'],
-        out_channels=config['model']['fp_size'],
-        node_feature_dim=config['model']['node_feature_dim'],
-        dropout_rate=config['model'].get('dropout_rate', 0.2),
-        bottleneck_factor=config['model'].get('bottleneck_factor', 1.0),
-        num_skipblocks=config['model'].get('num_skipblocks', 3),
-        num_gcn_layers=config['model'].get('num_gcn_layers', 3),
-        use_formula=config['model'].get('use_formula', False),
-        formula_embedding_dim=config['model'].get('formula_embedding_dim', 64),
-        gnn_layer_type=config['model'].get('gnn_layer_type', 'GCNConv'),
-        at_ks=config['metrics']['at_ks'],
-        lr=config['optimizer']['lr'],
-        weight_decay=config['optimizer']['weight_decay']
-    )
+    if task == "retrieval":
+        print("Using retrieval task/model.")
+        spectra_mgf = config['data'].get('spectra_mgf')
+        candidates_json = config['data'].get('candidates_json')
+        dataset = MSnRetrievalDataset(
+            pth=spectra_mgf,
+            candidates_pth=candidates_json,
+            featurizer=featurizer,
+            mol_transform=MolFingerprinter(fp_size=config['model']['fp_size']),
+            cut_tree_at_level=cut_tree_level,
+            max_allowed_deviation=config['data']['max_allowed_deviation'],
+            hierarchical_tree=config['data']['hierarchical_tree']
+        )
+        model = GNNRetrievalSkipConnections(
+            hidden_channels=config['model']['hidden_channels'],
+            out_channels=config['model']['fp_size'],
+            node_feature_dim=config['model']['node_feature_dim'],
+            dropout_rate=config['model'].get('dropout_rate', 0.2),
+            bottleneck_factor=config['model'].get('bottleneck_factor', 1.0),
+            num_skipblocks=config['model'].get('num_skipblocks', 3),
+            num_gcn_layers=config['model'].get('num_gcn_layers', 3),
+            use_formula=config['model'].get('use_formula', False),
+            formula_embedding_dim=config['model'].get('formula_embedding_dim', 64),
+            gnn_layer_type=config['model'].get('gnn_layer_type', 'GCNConv'),
+            at_ks=config['metrics']['at_ks'],
+            lr=config['optimizer']['lr'],
+            weight_decay=config['optimizer']['weight_decay']
+        )
+    elif task == "denovo":
+        print("Using de novo task/model.")
+        # For de novo, use the simpler MSnDataset
+        spectra_mgf = config['data'].get('spectra_mgf')
+        dataset = MSnDataset(
+            pth=spectra_mgf,
+            featurizer=featurizer,
+            mol_transform=None,
+            max_allowed_deviation=config['data'].get('max_allowed_deviation', 0.005)
+        )
+        # Load the SMILES tokenizer from a pretrained JSON path.
+        tokenizer_path = config['model'].get('smiles_tokenizer_path')
+        if tokenizer_path is None:
+            raise ValueError("For de novo task, 'smiles_tokenizer_path' must be provided in config['model'].")
+        smiles_tokenizer = ByteBPETokenizerWithSpecialTokens(tokenizer_path=tokenizer_path)
+        model = GATDeNovoTransformer(
+            input_dim=config['model']['node_feature_dim'],
+            d_model=config['model'].get('d_model', 1024),
+            nhead=config['model'].get('nhead', 8),
+            num_gat_layers=config['model'].get('num_gat_layers', 3),
+            num_decoder_layers=config['model'].get('num_decoder_layers', 6),
+            num_gat_heads=config['model'].get('num_gat_heads', 8),
+            gat_dropout=config['model'].get('gat_dropout', 0.6),
+            smiles_tokenizer=smiles_tokenizer,
+            dropout=config['model'].get('dropout_rate', 0.1),
+            max_smiles_len=config['model'].get('max_smiles_len', 200),
+            k_predictions=config['model'].get('k_predictions', 1),
+            temperature=config['model'].get('temperature', 1.0),
+            pre_norm=config['model'].get('pre_norm', False),
+            chemical_formula=config['model'].get('use_formula', False),
+            formula_embedding_dim=config['model'].get('formula_embedding_dim', 64)
+        )
+    else:
+        raise ValueError(f"Unknown task: {task}")
 
     # Initialize Loggers with experiment_name
     tb_logger = TensorBoardLogger(
