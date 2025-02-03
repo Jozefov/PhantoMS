@@ -12,6 +12,7 @@ setup(
         'torch',
         'pytorch-lightning',
         'torch-geometric',
+        'rdkit==2024.03.5',
         'wandb',
         # 'massspecgym @ git+ssh://git@github.com/Jozefov/MassSpecGymMSn.git@main#egg=massspecgym'
     ],
