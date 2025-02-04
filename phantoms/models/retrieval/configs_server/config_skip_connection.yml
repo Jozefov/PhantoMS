@@ -1,3 +1,5 @@
+task: "retrieval"
+
 featurizer:
   features: ['binned_peaks']
   feature_attributes:
