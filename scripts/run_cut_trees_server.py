@@ -8,6 +8,16 @@ from typing import List, Optional
 from phantoms.utils.parser import validate_config, train_model, extract_and_save_embeddings
 from phantoms.optimizations.training import set_global_seeds
 
+import wandb
+import yaml
+import os
+from datetime import datetime
+import time
+from typing import List, Optional
+
+from phantoms.utils.parser import validate_config, train_model, extract_and_save_embeddings
+from phantoms.optimizations.training import set_global_seeds
+
 def run_all_experiments(config_dir: str,
                         experiment_parent_dir: str,
                         config_files: List[str],
@@ -77,7 +87,7 @@ def run_all_experiments(config_dir: str,
             config['wandb']['project'] = wandb_project_name
 
             # Train the model
-            train_model(config, level, experiment_folder, config_path)
+            train_model(config, experiment_folder, config_path, level)
 
             # Extract and save embeddings
             extract_and_save_embeddings(config, level, experiment_folder)
@@ -86,7 +96,6 @@ def run_all_experiments(config_dir: str,
             wandb.finish()
 
     print("\nAll experiments completed successfully.")
-
 
 if __name__ == "__main__":
     # Define parameters
