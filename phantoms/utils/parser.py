@@ -15,9 +15,8 @@ from massspecgym.data.data_module import MassSpecDataModule
 from massspecgym.featurize import SpectrumFeaturizer
 from massspecgym.data.datasets import MSnRetrievalDataset, MSnDataset
 from massspecgym.data.transforms import MolFingerprinter
-from phantoms.utils.custom_tokenizers import ByteBPETokenizerWithSpecialTokens
+from phantoms.utils.custom_tokenizers.BPE_tokenizers import ByteBPETokenizerWithSpecialTokens
 
-# Import models for retrieval, de novo and decoder tasks.
 from phantoms.models.retrieval.gnn_retrieval_model_skip_connection import GNNRetrievalSkipConnections
 from phantoms.models.denovo.GATDeNovoTransformer import GATDeNovoTransformer
 from phantoms.models.denovo.molecule_decoder import MoleculeDecoder
@@ -34,11 +33,15 @@ def validate_config(config):
             raise ValueError(f"Missing required key in config: {key}")
 
 
-def train_model(config, cut_tree_level, experiment_folder, config_file_path):
+def train_model(config, experiment_folder, config_file_path, cut_tree_level=None):
     print(f"\nStarting training for {experiment_folder}")
     set_global_seeds(config.get("seed", 42))
-    featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
+
+    # For the tokenizer and decoder tasks we do not need a featurizer.
     task = config.get("task", "retrieval")  # possible values: "retrieval", "denovo", "decoder", "tokenizer"
+
+    # For tasks other than tokenizer, we may (if needed) initialize a featurizer.
+    featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
 
     if task == "retrieval":
         print("Using retrieval task/model.")
@@ -68,48 +71,7 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
             lr=config['optimizer']['lr'],
             weight_decay=config['optimizer']['weight_decay']
         )
-    elif task == "decoder":
-        print("Training stand-alone molecule decoder.")
-        tsv_path = config['data'].get('molecule_tsv')
-        if tsv_path is None:
-            raise ValueError("For decoder training, 'molecule_tsv' must be provided in config['data'].")
-        # Use the TSV file (which must have a column named "smiles") with the MoleculeTextDataset.
-        tokenizer_path = config['model'].get('smiles_tokenizer_path')
-        if tokenizer_path is None:
-            raise ValueError("For decoder training, 'smiles_tokenizer_path' must be provided in config['model'].")
-        tokenizer = ByteBPETokenizerWithSpecialTokens(tokenizer_path=tokenizer_path)
-        dataset = MoleculeTextDataset(tsv_path, tokenizer, smiles_column="smiles",
-                                      max_len=config['model'].get('max_len', 200))
-        vocab_size = tokenizer.get_vocab_size()
-        model = MoleculeDecoder(
-            vocab_size=vocab_size,
-            d_model=config['model'].get('d_model', 1024),
-            nhead=config['model'].get('nhead', 4),
-            num_decoder_layers=config['model'].get('num_decoder_layers', 4),
-            dropout=config['model'].get('dropout_rate', 0.1),
-            pad_token_id=tokenizer.token_to_id(config.get('pad_token', 'PAD')),
-            max_len=config['model'].get('max_len', 200)
-        )
-    elif task == "tokenizer":
-        print("Training tokenizer from TSV file.")
-        tsv_path = config['data'].get('molecule_tsv')
-        if tsv_path is None:
-            raise ValueError("For tokenizer training, 'molecule_tsv' must be provided in config['data'].")
-        # Read the TSV file using pandas to extract the smiles list.
-        import pandas as pd
-        df = pd.read_csv(tsv_path, sep="\t")
-        smiles_list = df["smiles"].tolist()
-        tokenizer = ByteBPETokenizerWithSpecialTokens(max_len=config['model'].get('max_len', 200))
-        SMILES_TOKENIZER_SAVE_PATH = config['model'].get('smiles_tokenizer_save_path', "smiles_tokenizer.json")
-        tokenizer.train(
-            texts=smiles_list,
-            vocab_size=config['model'].get('vocab_size', 1000),
-            min_frequency=config['model'].get('min_frequency', 2),
-            save_path=SMILES_TOKENIZER_SAVE_PATH,
-            show_progress=True
-        )
-        print("Tokenizer training complete.")
-        return  # Exit after training tokenizer.
+
     elif task == "denovo":
         print("Using de novo task/model.")
         spectra_mgf = config['data'].get('spectra_mgf')
@@ -117,7 +79,9 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
             pth=spectra_mgf,
             featurizer=featurizer,
             mol_transform=None,
-            max_allowed_deviation=config['data'].get('max_allowed_deviation', 0.005)
+            cut_tree_at_level=cut_tree_level,
+            max_allowed_deviation=config['data']['max_allowed_deviation'],
+            hierarchical_tree=config['data']['hierarchical_tree']
         )
         tokenizer_path = config['model'].get('smiles_tokenizer_path')
         if tokenizer_path is None:
@@ -137,8 +101,12 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
             k_predictions=config['model'].get('k_predictions', 1),
             temperature=config['model'].get('temperature', 1.0),
             pre_norm=config['model'].get('pre_norm', False),
-            chemical_formula=config['model'].get('use_formula', False),
-            formula_embedding_dim=config['model'].get('formula_embedding_dim', 64)
+            use_formula=config['model'].get('use_formula', False),
+            formula_embedding_dim=config['model'].get('formula_embedding_dim', 64),
+            beam_width=config['model'].get('beam_width', 1),
+            at_ks=config['metrics']['at_ks'],
+            lr=config['optimizer']['lr'],
+            weight_decay=config['optimizer']['weight_decay']
         )
         if config['model'].get('load_pretrained_decoder', False):
             pretrained_state = torch.load(config['model'].get('decoder_pretrained_path'), map_location="cpu")
@@ -200,7 +168,13 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
     )
 
     trainer.fit(model, datamodule=data_module)
+
+    if hasattr(model, "beam_width"):
+        orig_beam = model.beam_width
+        model.beam_width = config['model'].get('test_beam_width', 10)
     trainer.test(model, datamodule=data_module)
+    if hasattr(model, "beam_width"):
+        model.beam_width = orig_beam
 
     model_save_path = os.path.join(checkpoint_dir, 'final_model.ckpt')
     trainer.save_checkpoint(model_save_path)
@@ -212,7 +186,6 @@ def train_model(config, cut_tree_level, experiment_folder, config_file_path):
     config_save_path = os.path.join(experiment_folder, 'configs', os.path.basename(config_file_path))
     shutil.copyfile(config_file_path, config_save_path)
     print(f"Configuration saved to {config_save_path}")
-
 
 def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
     print(f"\nExtracting embeddings for {experiment_folder}")
@@ -259,8 +232,12 @@ def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
             k_predictions=config['model'].get('k_predictions', 1),
             temperature=config['model'].get('temperature', 1.0),
             pre_norm=config['model'].get('pre_norm', False),
-            chemical_formula=config['model'].get('use_formula', False),
-            formula_embedding_dim=config['model'].get('formula_embedding_dim', 64)
+            use_formula=config['model'].get('use_formula', False),
+            formula_embedding_dim=config['model'].get('formula_embedding_dim', 64),
+            beam_width=config['model'].get('beam_width', 1),
+            at_ks=config['metrics']['at_ks'],
+            lr=config['optimizer']['lr'],
+            weight_decay=config['optimizer']['weight_decay']
         )
     else:
         raise ValueError(f"Unknown task: {task}")
@@ -284,7 +261,9 @@ def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
             pth=config['data']['spectra_mgf'],
             featurizer=SpectrumFeaturizer(config['featurizer'], mode='torch'),
             mol_transform=None,
-            max_allowed_deviation=config['data'].get('max_allowed_deviation', 0.005)
+            cut_tree_at_level=cut_tree_level,
+            max_allowed_deviation=config['data']['max_allowed_deviation'],
+            hierarchical_tree=config['data']['hierarchical_tree']
         )
 
     data_module = MassSpecDataModule(
