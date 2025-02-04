@@ -10,8 +10,9 @@ from torch_geometric.nn import GATConv, global_mean_pool
 from massspecgym.models.base import Stage
 from massspecgym.models.de_novo.base import DeNovoMassSpecGymModel
 
-from phantoms.utils.custom_tokenizers import ByteBPETokenizerWithSpecialTokens
-from phantoms.utils.constants import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN
+from phantoms.utils.custom_tokenizers.BPE_tokenizers import ByteBPETokenizerWithSpecialTokens
+from phantoms.utils.constants import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN, ELEMENTS
+from phantoms.utils.data import encode_formula, smiles_to_formula
 from phantoms.models.denovo.positional_encoding import PositionalEncoding
 
 from torch.nn import TransformerDecoder, TransformerDecoderLayer
@@ -50,10 +51,10 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
             k_predictions: int = 1,
             temperature: T.Optional[float] = 1.0,
             pre_norm: bool = False,
-            chemical_formula: bool = False,
+            use_formula: bool = False,
             formula_embedding_dim: int = 64,  # used if chemical_formula is True
             log_only_loss_at_stages: Optional[list] = [Stage.TRAIN],
-            test_beam_width: int = 1,  # default greedy during training; can be set higher at test
+            beam_width: int = 1,  # default greedy during training; can be set higher at test
             *args, **kwargs
     ):
         super().__init__(log_only_loss_at_stages=log_only_loss_at_stages, *args, **kwargs)
@@ -73,8 +74,8 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
         self.max_smiles_len = max_smiles_len
         self.k_predictions = k_predictions
         self.temperature = temperature if k_predictions > 1 else None
-        self.chemical_formula = chemical_formula
-        self.test_beam_width = test_beam_width
+        self.use_formula = use_formula
+        self.beam_width = beam_width
         self.nhead = nhead  # number of heads
 
         # --- GAT Encoder ---
@@ -101,10 +102,10 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
             )
 
         # --- Encoder Projection & Formula Integration ---
-        if self.chemical_formula:
+        if self.use_formula:
             # Formula encoder: maps from 128 to formula_embedding_dim
             self.formula_encoder = nn.Sequential(
-                nn.Linear(128, formula_embedding_dim),
+                nn.Linear(len(ELEMENTS), formula_embedding_dim),
                 nn.ReLU(),
                 nn.Linear(formula_embedding_dim, formula_embedding_dim),
                 nn.ReLU()
@@ -130,12 +131,6 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
         self.decoder_fc = nn.Linear(d_model, self.vocab_size)
         self.criterion = nn.CrossEntropyLoss(ignore_index=self.pad_token_id)
 
-        # --- Per-head projections for decoder layers ---
-        # One projection per decoder layer to map each head's vector (d_model//nhead) to d_model.
-        self.decoder_head_projs = nn.ModuleList([
-            nn.Linear(d_model // nhead, d_model) for _ in range(num_decoder_layers)
-        ])
-
         self._init_weights()
 
     def _init_weights(self):
@@ -150,7 +145,7 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
         loss = ret["loss"]
         self.log(f"{stage.to_pref()}loss", loss, prog_bar=True, batch_size=batch["spec"].num_graphs)
         if stage not in self.log_only_loss_at_stages:
-            mols_pred = self.decode_smiles(batch, beam_width=self.test_beam_width)
+            mols_pred = self.decode_smiles(batch, beam_width=self.beam_width)
             ret["mols_pred"] = mols_pred
         else:
             ret["mols_pred"] = None
@@ -188,9 +183,13 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
         #     embeddings["gnn_pool"] = gnn_out.detach()
 
         # --- Formula Integration ---
-        if self.chemical_formula and ("formula" in batch):
-            formula = batch["formula"].float().to(x.device)
-            formula_enc = self.formula_encoder(formula)  # [batch, formula_embedding_dim]
+        if self.use_formula:
+            # Instead of looking for "formula" in the batch (which is not present for de novo),
+            # we use the SMILES strings to compute the molecular formula.
+            formulas = [smiles_to_formula(sm) for sm in smiles_list]
+            # Encode each formula to a vector and stack into a tensor.
+            formula_encodings = torch.stack([encode_formula(formula) for formula in formulas]).to(x.device)
+            formula_enc = self.formula_encoder(formula_encodings)  # [batch, formula_embedding_dim]
             combined = torch.cat([gnn_out, formula_enc], dim=1)  # [batch, d_model + formula_embedding_dim]
         else:
             combined = gnn_out
@@ -226,8 +225,7 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
                 reshaped = decoder_input.view(decoder_input.size(0), decoder_input.size(1), self.nhead, d_head)
                 head_means = reshaped.mean(dim=0)  # [batch, nhead, d_head]
                 for h in range(self.nhead):
-                    head_emb = self.decoder_head_projs[i - 1](head_means[:, h, :])  # [batch, d_model]
-                    embeddings[f"decoder_layer_{i}_head_{h + 1}"] = head_emb.detach()
+                    embeddings[f"decoder_layer_{i}_head_{h + 1}"] = head_means[:, h, :].detach()
         else:
             # If not collecting embeddings, simply run the whole decoder:
             decoder_input = self.transformer_decoder(
@@ -286,20 +284,23 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
     def decode_smiles(self, batch: dict, beam_width: Optional[int] = None) -> List[List[str]]:
         """
         Generate SMILES for each sample in the batch.
-        If beam_width is not provided, uses self.test_beam_width.
+        If beam_width is not provided, uses self.beam_width.
         Returns a list (length = batch_size) of lists (each containing one generated SMILES).
         """
         if beam_width is None:
-            beam_width = self.test_beam_width
+            beam_width = self.beam_width
         spec = batch["spec"]
         x, edge_index, batch_idx = spec.x, spec.edge_index, spec.batch
         for gat in self.gat_layers:
             x = gat(x, edge_index)
             x = F.elu(x)
         x = global_mean_pool(x, batch_idx)
-        if self.chemical_formula and ("formula" in batch):
-            formula = batch["formula"].float().to(x.device)
-            formula_enc = self.formula_encoder(formula)
+        if self.use_formula:
+            # For decoding, also compute formula embedding using smiles in batch["mol"]
+            smiles_list = batch["mol"]
+            formulas = [smiles_to_formula(sm) for sm in smiles_list]
+            formula_encodings = torch.stack([encode_formula(formula) for formula in formulas]).to(x.device)
+            formula_enc = self.formula_encoder(formula_encodings)
             x = torch.cat([x, formula_enc], dim=1)
         memory_all = self.encoder_fc(x)
         batch_size = memory_all.size(0)
@@ -338,15 +339,9 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
                 decoded_list.append([text])
         return decoded_list
 
-    def get_embeddings(self, batch: dict, smiles_batch: Optional[List[str]] = None) -> Dict[str, torch.Tensor]:
+    def get_embeddings(self, batch: dict) -> Dict[str, torch.Tensor]:
         """
         Run a forward pass with collect_embeddings=True and return a dictionary of intermediate embeddings.
-        The returned dictionary contains keys:
-          - "gnn_i" for each GAT layer overall pooled output,
-          - "gnn_i_head_j" for per-head pooled outputs of each GAT layer,
-          - "encoder_projection" for the output of encoder_fc,
-          - "decoder_layer_i" for overall pooled output of each decoder layer,
-          - "decoder_layer_i_head_j" for per-head pooled outputs from each decoder layer.
         """
         ret = self.forward(batch, collect_embeddings=True)
         return ret.get("embeddings", {})
