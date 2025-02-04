@@ -1,0 +1,65 @@
+task: "denovo"
+
+featurizer:
+  features: ['binned_peaks']
+  feature_attributes:
+    binned_peaks:
+      max_mz: 1000
+      bin_width: 0.25
+      to_rel_intensities: true
+
+data:
+  spectra_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_trees.mgf"
+  split_file: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_split.tsv"
+  max_allowed_deviation: 0.005
+  batch_size: 2
+  num_workers: 0
+  hierarchical_tree: false
+
+model:
+  node_feature_dim: 4000
+  d_model: 1024
+  nhead: 4
+  num_decoder_layers: 4
+  num_gat_layers: 3
+  num_gat_heads: 4
+  gat_dropout: 0.6
+  dropout_rate: 0.1
+  max_smiles_len: 200
+  k_predictions: 1
+  temperature: 1.0
+  pre_norm: false
+  use_formula: true
+  formula_embedding_dim: 64
+  # Pretrained tokenizer JSON file (already trained)
+  smiles_tokenizer_path: "/Users/macbook/CODE/PhantoMS/experiments_run/2025-02-03_17-46-47_tokenizer_test/smiles_tokenizer.json"
+  # In denovo training we load a pretrained decoder (which was trained separately)
+  load_pretrained_decoder: true
+  decoder_pretrained_path: "/Users/macbook/CODE/PhantoMS/experiments_run/2025-02-03_18-21-51_decoder_test/smiles_decoder_pretrained.pth"
+  beam_width: 1
+  test_beam_width: 10
+
+metrics:
+  at_ks: [1, 5, 20]
+
+optimizer:
+  lr: 0.001
+  weight_decay: 0.0001
+
+trainer:
+  accelerator: "cpu"           # Change to "gpu" if available
+  devices: 1
+  max_epochs: 2
+  log_every_n_steps: 10
+  limit_train_batches: 2
+  limit_val_batches: 2
+  limit_test_batches: 2
+  checkpoint_monitor: "val_loss"
+  save_top_k: 3
+  checkpoint_mode: "min"
+
+experiment_base_name: "denovo_bonus_test"
+
+wandb:
+  project: "PhantoMS_Decoder"
+  entity: "jozefov-iocb-prague"
