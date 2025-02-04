@@ -78,9 +78,7 @@ def save_embeddings(model, dataloader, save_dir):
 
     with torch.no_grad():
         for batch_idx, batch in enumerate(dataloader):
-            data = batch['spec']
-            smiles = batch.get('smiles', None) if model.use_formula else None
-            embeddings = model.get_embeddings(data, smiles_batch=smiles)  # Dict of embeddings
+            embeddings = model.get_embeddings(batch)  # Dict of embeddings
 
             for layer_name, embed in embeddings.items():
                 if layer_name not in embeddings_dict:
