@@ -1,0 +1,26 @@
+data:
+  molecule_tsv: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_sample.tsv"
+  batch_size: 32
+
+model:
+  max_len: 200
+  d_model: 1024
+  nhead: 4
+  num_decoder_layers: 4
+  dropout_rate: 0.1
+  vocab_size: 1000
+  min_frequency: 2
+  # Path to the pretrained tokenizer JSON file
+  smiles_tokenizer_path: "/Users/macbook/CODE/PhantoMS/experiments_run/2025-02-03_17-46-47_tokenizer_test/smiles_tokenizer.json"
+
+trainer:
+  max_epochs: 2
+  accelerator: "cpu"
+  devices: 1
+  log_every_n_steps: 1
+
+experiment_base_name: "decoder_test"
+
+wandb:
+  project: "PhantoMS_Decoder"
+  entity: "jozefov-iocb-prague"
