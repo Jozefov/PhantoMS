@@ -149,19 +149,20 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         else:
             return x
 
-
-    def get_embeddings(self, data, smiles_batch: Optional[List[str]] = None):
+    def get_embeddings(self, batch):
         """
         Extract embeddings from each layer.
 
         Args:
             data (dict): Batch of data.
-            smiles_batch (Optional[List[str]]): List of SMILES strings, required if use_formula is True, for bonus task.
 
         Returns:
             dict: Dictionary containing embeddings from each layer.
         """
-        _, embeddings = self.forward(data, collect_embeddings=True, smiles_batch=smiles_batch)
+        data = batch['spec']
+        smiles = batch.get('smiles', None) if self.use_formula else None
+
+        _, embeddings = self.forward(data, collect_embeddings=True, smiles_batch=smiles)
         return embeddings
 
     def step(self, batch: dict, stage: Stage) -> tuple[torch.Tensor, torch.Tensor]:
