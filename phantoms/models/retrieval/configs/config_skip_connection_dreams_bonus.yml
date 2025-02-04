@@ -1,3 +1,5 @@
+task: "retrieval"
+
 featurizer:
   features: ['spectrum_embedding']
   feature_attributes:
