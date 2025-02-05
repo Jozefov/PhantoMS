@@ -19,14 +19,15 @@ data:
   hierarchical_tree: false
 
 model:
-  hidden_channels: 2048
+  hidden_channels: 1024
   fp_size: 2048
   node_feature_dim: 1024
   dropout_rate: 0.2
   bottleneck_factor: 1.0
-  num_skipblocks: 3
+  num_skipblocks: 4
   num_gcn_layers: 3
   gnn_layer_type: 'GATConv'
+  nheads: 4
   use_formula: false
   formula_embedding_dim: 0
 
@@ -50,7 +51,7 @@ trainer:
   checkpoint_mode: "min"
   checkpoint_dir: "checkpoints/"
 
-experiment_base_name: "name"
+experiment_base_name: "name_test_GAT"
 
 wandb:
   project: "PhantoMS_Retrieval"
