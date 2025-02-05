@@ -67,6 +67,7 @@ def train_model(config, experiment_folder, config_file_path, cut_tree_level=None
             use_formula=config['model'].get('use_formula', False),
             formula_embedding_dim=config['model'].get('formula_embedding_dim', 64),
             gnn_layer_type=config['model'].get('gnn_layer_type', 'GCNConv'),
+            nheads=config['model'].get('nheads', 0),
             at_ks=config['metrics']['at_ks'],
             lr=config['optimizer']['lr'],
             weight_decay=config['optimizer']['weight_decay']
@@ -209,6 +210,7 @@ def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
             use_formula=config['model'].get('use_formula', False),
             formula_embedding_dim=config['model'].get('formula_embedding_dim', 64),
             gnn_layer_type=config['model'].get('gnn_layer_type', 'GCNConv'),
+            nheads=config['model'].get('nheads', 0),
             at_ks=config['metrics']['at_ks'],
             lr=config['optimizer']['lr'],
             weight_decay=config['optimizer']['weight_decay']
