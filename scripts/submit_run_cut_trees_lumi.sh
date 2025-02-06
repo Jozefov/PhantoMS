@@ -2,9 +2,9 @@
 #SBATCH --job-name=CutTreesValidation       # Job name
 #SBATCH --account=project_465001738         # LUMI project account
 #SBATCH --partition=standard-g              # GPU partition on LUMI
-#SBATCH --gpus-per-node=2                   # Request 2 GPUs per node
+#SBATCH --gpus-per-node=8                   # Request 2 GPUs per node
 #SBATCH --nodes=1                           # Number of nodes
-#SBATCH --time=1:00:00                      # Time limit (hrs:min:sec)
+#SBATCH --time=48:00:00                     # Time limit (hrs:min:sec)
 #SBATCH --output=CutTreesValidation_%j.out  # Standard output log
 #SBATCH --error=CutTreesValidation_%j.err   # Standard error log
 
