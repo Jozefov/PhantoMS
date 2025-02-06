@@ -79,7 +79,7 @@ def run_all_experiments(config_dir: str,
             config['wandb']['project'] = wandb_project_name
 
             # Train the model
-            train_model(config, level, experiment_folder, config_path)
+            train_model(config, experiment_folder, config_path, level)
 
             # Extract and save embeddings
             extract_and_save_embeddings(config, level, experiment_folder)
