@@ -10,23 +10,25 @@ featurizer:
       embedding_dim: 1024
 
 data:
-  spectra_mgf: "/scratch/project_465001738/jozefov_147/data/MSn/min_sample_trees.mgf"
+  spectra_mgf: "/scratch/project_465001738/jozefov_147/data/MSn/20241211_msn_library_pos_all_lib_MSn.mgf"
   candidates_json: "/scratch/project_465001738/jozefov_147/data/MSn/MassSpecGymMSn_retrieval_candidates_formula.json"
   split_file: "/scratch/project_465001738/jozefov_147/data/MSn/20241211_split.tsv"
   max_allowed_deviation: 0.005
   batch_size: 32
-  num_workers: 10
+  num_workers: 16
   hierarchical_tree: false
   pin_memory: true
 
 model:
-  hidden_channels: 2048
+  hidden_channels: 1024
   fp_size: 2048
   node_feature_dim: 1024
   dropout_rate: 0.2
   bottleneck_factor: 1.0
   num_skipblocks: 4
   num_gcn_layers: 3
+  gnn_layer_type: 'GATConv'
+  nheads: 4
   use_formula: true
   formula_embedding_dim: 64
 
@@ -38,34 +40,20 @@ optimizer:
   weight_decay: 0.0001
 
 trainer:
-  accelerator: "cuda"
-  devices: 2
-  num_nodes: 1
-  max_epochs: 2
-  log_every_n_steps: 10
-  limit_train_batches: 2
-  limit_val_batches: 2
-  limit_test_batches: 2
-  checkpoint_monitor: "val_loss"
-  save_top_k: 3
-  checkpoint_mode: "min"
-  checkpoint_dir: "checkpoints/"
-
-#trainer:
-#  accelerator: "cuda"                  # Use GPU
-#  devices: 8                          # Number of GPUs per node
-#  num_nodes: 1                        # Number of nodes
-#  max_epochs: 30                      # Train for exactly 30 epochs
-#  log_every_n_steps: 20               # Logging frequency
-#  check_val_every_n_epoch: 5          # Validate every 3 epochs
-#  limit_train_batches: 1.0            # Use 100% of training data
-#  limit_val_batches: 1.0
-#  limit_test_batches: 1.0
-#  checkpoint_monitor: "val_loss"      # Monitor validation loss
-#  save_top_k: 2                       # Save top 2 models
-#  checkpoint_mode: "min"              # Minimize validation loss
-#  checkpoint_dir: "checkpoints/"      # Directory to save checkpoints
-#  strategy: "ddp"                     # Distributed Data Parallel
+  accelerator: "cuda"                  # Use GPU
+  devices: 8                          # Number of GPUs per node
+  num_nodes: 1                        # Number of nodes
+  max_epochs: 30                      # Train for exactly 30 epochs
+  log_every_n_steps: 20               # Logging frequency
+  check_val_every_n_epoch: 5          # Validate every 3 epochs
+  limit_train_batches: 1.0            # Use 100% of training data
+  limit_val_batches: 1.0
+  limit_test_batches: 1.0
+  checkpoint_monitor: "val_loss"      # Monitor validation loss
+  save_top_k: 2                       # Save top 2 models
+  checkpoint_mode: "min"              # Minimize validation loss
+  checkpoint_dir: "checkpoints/"      # Directory to save checkpoints
+  strategy: "ddp"                     # Distributed Data Parallel
 
 experiment_base_name: "name"
 
