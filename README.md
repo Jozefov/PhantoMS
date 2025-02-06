@@ -10,6 +10,6 @@ To remove:conda env remove -n phantoms_env
 [ ] install phantoms now as export to python env
     export PYTHONPATH="/Users/macbook/CODE/PhantoMS:$PYTHONPATH"
 
-# TEST UPLOAD KAROLINA
+# TEST UPLOAD LUMI
 
 # not working 
