@@ -8,9 +8,14 @@ dependencies:
   - pip
   - pip:
     - torch
+    - numpy
+    - pandas
+    - pyyaml
     - pytorch-lightning
     - torch-geometric
     - wandb
     - tensorboard
+    - rdkit==2024.03.5
+    - umap-learn==0.5.7
     - 'massspecgym[notebooks] @ git+ssh://git@github.com/Jozefov/MassSpecGymMSn.git@main'
     - -e .
