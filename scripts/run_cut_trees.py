@@ -93,7 +93,7 @@ def run_all_experiments(config_dir: str,
 if __name__ == "__main__":
     # Define parameters
     config_directory = '/Users/macbook/CODE/PhantoMS/phantoms/models/retrieval/configs'
-    experiment_parent_directory = '/Users/macbook/CODE/PhantoMS/experiments_run/new_gnn'
+    experiment_parent_directory = '/Users/macbook/CODE/PhantoMS/experiments_run/mac_gpu_utilization'
 
     configuration_files = [
         'config_skip_connection_dreams_GAT.yml',
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     ]
     tree_levels = [3]
 
-    wandb_project_name = 'new_gnn'
+    wandb_project_name = 'mac_gpu_utilization'
 
     # Authenticate with W&B
     print("Logging into Weights & Biases...")

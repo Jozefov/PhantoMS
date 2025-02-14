@@ -99,18 +99,18 @@ def run_all_experiments(config_dir: str,
 
 if __name__ == "__main__":
     # Define parameters
-    config_directory = '/scratch/project_465001738/jozefov_147/PhantoMS/phantoms/models/retrieval/configs_server'
-    experiment_parent_directory = '/scratch/project_465001738/jozefov_147/PhantoMS/experiments_run/lumi_cut_trees'
+    config_directory = '/scratch/project/open-26-5/jozefov_147/PhantoMS/phantoms/models/retrieval/configs_server'
+    experiment_parent_directory = '/scratch/project/open-26-5/jozefov_147/PhantoMS/experiments_run/karolina_full_test'
 
     configuration_files = [
         'config_skip_connection.yml',
-        'config_skip_connection_bonus.yml',
-        'config_skip_connection_dreams.yml',
-        'config_skip_connection_dreams_bonus.yml'
+        # 'config_skip_connection_bonus.yml',
+        # 'config_skip_connection_dreams.yml',
+        # 'config_skip_connection_dreams_bonus.yml'
     ]
     tree_levels = [0, 1, 2, 3]
 
-    wandb_project_name = 'lumi_cut_trees'
+    wandb_project_name = 'karolina_full_test'
 
     # Authenticate with W&B
     print("Logging into Weights & Biases...")

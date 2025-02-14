@@ -14,10 +14,10 @@ data:
   candidates_json: "/scratch/project_465001738/jozefov_147/data/MSn/MassSpecGymMSn_retrieval_candidates_mass.json"
   split_file: "/scratch/project_465001738/jozefov_147/data/MSn/20241211_split.tsv"
   max_allowed_deviation: 0.005
-  batch_size: 32
-  num_workers: 16
+  batch_size: 128
+  num_workers: 1
   hierarchical_tree: false
-  pin_memory: true
+  pin_memory: false
 
 model:
   hidden_channels: 1024
@@ -36,12 +36,12 @@ metrics:
   at_ks: [1, 5, 20]
 
 optimizer:
-  lr: 0.001
+  lr: 0.0005
   weight_decay: 0.0001
 
 trainer:
   accelerator: "cuda"                  # Use GPU
-  devices: 8                          # Number of GPUs per node
+  devices: 1                          # Number of GPUs per node
   num_nodes: 1                        # Number of nodes
   max_epochs: 30                      # Train for exactly 30 epochs
   log_every_n_steps: 20               # Logging frequency
@@ -53,7 +53,7 @@ trainer:
   save_top_k: 2                       # Save top 2 models
   checkpoint_mode: "min"              # Minimize validation loss
   checkpoint_dir: "checkpoints/"      # Directory to save checkpoints
-  strategy: "ddp"                     # Distributed Data Parallel
+  strategy: "auto"                     # Distributed Data Parallel
 
 experiment_base_name: "name"
 

@@ -1,0 +1,21 @@
+# Do not install torch here because LUMI provides an optimized PyTorch module
+numpy
+pandas
+pyyaml
+pytorch-lightning
+torch-geometric
+wandb
+tensorboard
+rdkit==2024.03.5
+umap-learn==0.5.7
+
+# Optional: Pin versions for packages that might conflict
+# For example, if gensim requires scipy<1.14.0, you could add:
+# scipy==1.13.1
+# lxml==4.9.4
+
+# Install massspecgym (with notebooks extras) from your private repository
+massspecgym[notebooks] @ git+ssh://git@github.com/Jozefov/MassSpecGymMSn.git@main
+
+# Install your local package in editable mode
+-e .

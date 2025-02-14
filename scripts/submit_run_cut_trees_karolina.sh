@@ -2,7 +2,7 @@
 #SBATCH --job-name=CutTreesValidation       # Job name
 #SBATCH --account=OPEN-30-19                # Project account
 #SBATCH --partition=qgpu                    # Partition name (qgpu for GPU jobs)
-#SBATCH --gpus=2                            # Number of GPUs required
+#SBATCH --gpus=1                            # Number of GPUs required
 #SBATCH --nodes=1                           # Number of nodes
 #SBATCH --time=1:00:00                     # Time limit hrs:min:sec
 #SBATCH --output=CutTreesValidation_%j.out  # Standard output log

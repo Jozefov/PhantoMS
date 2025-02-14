@@ -10,7 +10,7 @@ featurizer:
       embedding_dim: 1024
 
 data:
-  spectra_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_trees.mgf"
+  spectra_mgf: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_msn_library_pos_all_lib_MSn.mgf"
   candidates_json: "/Users/macbook/CODE/Majer:MassSpecGym/data/candidates_generation/MassSpecGymMSn_retrieval_candidates_mass.json"
   split_file: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_split.tsv"
   max_allowed_deviation: 0.005
@@ -39,19 +39,36 @@ optimizer:
   weight_decay: 0.0001
 
 trainer:
-  accelerator: "cpu"
-  devices: 1
-  max_epochs: 2
-  log_every_n_steps: 10
-  limit_train_batches: 2
-  limit_val_batches: 2
-  limit_test_batches: 2
-  checkpoint_monitor: "val_loss"
-  save_top_k: 3
-  checkpoint_mode: "min"
-  checkpoint_dir: "checkpoints/"
+  accelerator: "mps"                  # Use GPU
+  devices: 1                          # Number of GPUs per node
+  num_nodes: 1                        # Number of nodes
+  max_epochs: 30                      # Train for exactly 30 epochs
+  log_every_n_steps: 20               # Logging frequency
+  check_val_every_n_epoch: 5          # Validate every 3 epochs
+  limit_train_batches: 1.0            # Use 100% of training data
+  limit_val_batches: 1.0
+  limit_test_batches: 1.0
+  checkpoint_monitor: "val_loss"      # Monitor validation loss
+  save_top_k: 2                       # Save top 2 models
+  checkpoint_mode: "min"              # Minimize validation loss
+  checkpoint_dir: "checkpoints/"      # Directory to save checkpoints
+#  strategy: "ddp"                     # Distributed Data Parallel
 
-experiment_base_name: "name_test_GAT"
+#
+#trainer:
+#  accelerator: "cpu"
+#  devices: 1
+#  max_epochs: 2
+#  log_every_n_steps: 10
+#  limit_train_batches: 2
+#  limit_val_batches: 2
+#  limit_test_batches: 2
+#  checkpoint_monitor: "val_loss"
+#  save_top_k: 3
+#  checkpoint_mode: "min"
+#  checkpoint_dir: "checkpoints/"
+
+experiment_base_name: "local_full_test_GAT"
 
 wandb:
   project: "PhantoMS_Retrieval"
