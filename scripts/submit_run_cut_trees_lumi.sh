@@ -2,9 +2,9 @@
 #SBATCH --job-name=CutTreesValidation       # Job name
 #SBATCH --account=project_465001738         # LUMI project account
 #SBATCH --partition=standard-g              # GPU partition on LUMI
-#SBATCH --gpus-per-node=8                   # Request 2 GPUs per node
+#SBATCH --gpus-per-node=1                   # Request 2 GPUs per node
 #SBATCH --nodes=1                           # Number of nodes
-#SBATCH --time=48:00:00                     # Time limit (hrs:min:sec)
+#SBATCH --time=4:00:00                     # Time limit (hrs:min:sec)
 #SBATCH --output=CutTreesValidation_%j.out  # Standard output log
 #SBATCH --error=CutTreesValidation_%j.err   # Standard error log
 
@@ -30,13 +30,19 @@ source /scratch/project_465001738/jozefov_147/miniconda3/etc/profile.d/conda.sh
 conda activate phantoms_env
 
 # -------------------------------
-# 4. Ensure WANDB API key is available
+# 4. Set GPU environment variables for distributed training
+# -------------------------------
+#export SLURM_GPUS_PER_NODE=8
+#export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+
+# -------------------------------
+# 5. Ensure WANDB API key is available
 # -------------------------------
 # (Assuming your ~/.bashrc already exports WANDB_API_KEY; we export it here again for safety)
 export WANDB_API_KEY=${WANDB_API_KEY}
 
 # -------------------------------
-# 5. Change to the project directory
+# 6. Change to the project directory
 # -------------------------------
 cd /scratch/project_465001738/jozefov_147/PhantoMS
 
