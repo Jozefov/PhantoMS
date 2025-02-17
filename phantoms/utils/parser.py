@@ -47,9 +47,11 @@ def train_model(config, experiment_folder, config_file_path, cut_tree_level=None
         print("Using retrieval task/model.")
         spectra_mgf = config['data'].get('spectra_mgf')
         candidates_json = config['data'].get('candidates_json')
+        cache_pth = config['data'].get('cache_path')
         dataset = MSnRetrievalDataset(
             pth=spectra_mgf,
             candidates_pth=candidates_json,
+            cache_pth=cache_pth,
             featurizer=featurizer,
             mol_transform=MolFingerprinter(fp_size=config['model']['fp_size']),
             cut_tree_at_level=cut_tree_level,
@@ -251,6 +253,7 @@ def extract_and_save_embeddings(config, cut_tree_level, experiment_folder):
         dataset = MSnRetrievalDataset(
             pth=config['data']['spectra_mgf'],
             candidates_pth=config['data'].get('candidates_json'),
+            cache_pth=config['data'].get('cache_pth'),
             featurizer=SpectrumFeaturizer(config['featurizer'], mode='torch'),
             mol_transform=MolFingerprinter(fp_size=config['model']['fp_size']),
             cut_tree_at_level=cut_tree_level,
