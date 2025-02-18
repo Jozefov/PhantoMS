@@ -8,23 +8,18 @@ from typing import List, Optional
 from phantoms.utils.parser import validate_config, train_model, extract_and_save_embeddings
 from phantoms.optimizations.training import set_global_seeds
 
-import wandb
-import yaml
-import os
-from datetime import datetime
-import time
-from typing import List, Optional
-
-from phantoms.utils.parser import validate_config, train_model, extract_and_save_embeddings
-from phantoms.optimizations.training import set_global_seeds
-
 def run_all_experiments(config_dir: str,
                         experiment_parent_dir: str,
                         config_files: List[str],
                         cut_tree_levels: Optional[List[int]],
-                        wandb_project_name: str):
+                        wandb_project_name: str,
+                        resume_config: Optional[str] = None,
+                        resume_level: Optional[int] = None):
     """
     Iterate over all configuration files and tree levels to run experiments.
+    When resume_config and resume_level are provided, the function will skip
+    over the experiments until it reaches the specified configuration file and
+    tree level, and then continue from there.
 
     Args:
         config_dir (str): Directory containing configuration YAML files.
@@ -32,6 +27,8 @@ def run_all_experiments(config_dir: str,
         config_files (List[str]): List of configuration YAML filenames.
         cut_tree_levels (Optional[List[int]]): List of cut_tree_at_level values.
         wandb_project_name (str): Name of the wandb project.
+        resume_config (Optional[str]): Configuration file to resume from.
+        resume_level (Optional[int]): Tree level within resume_config to resume from.
     """
     # Set global seeds for reproducibility
     set_global_seeds(42)
@@ -39,8 +36,27 @@ def run_all_experiments(config_dir: str,
     # Create the parent experiment directory if it doesn't exist
     os.makedirs(experiment_parent_dir, exist_ok=True)
 
-    # Iterate over each configuration file
+    # If resume_config is not provided, we start normally (i.e. resume_found=True)
+    resume_found = resume_config is None
+
     for config_file in config_files:
+        # If we are in resume mode, skip config files until we find the resume_config
+        if not resume_found:
+            if config_file == resume_config:
+                resume_found = True
+                # For the resume config, only run levels >= resume_level
+                current_levels = [level for level in cut_tree_levels if level >= resume_level]
+                print(f"Resuming {config_file} starting from tree level {resume_level}")
+            else:
+                print(f"Skipping {config_file} (waiting to resume from {resume_config})")
+                continue
+        else:
+            # For the config file we are resuming from, filter levels; for the rest, run all levels.
+            if resume_config is not None and config_file == resume_config:
+                current_levels = [level for level in cut_tree_levels if level >= resume_level]
+            else:
+                current_levels = cut_tree_levels
+
         config_path = os.path.join(config_dir, config_file)
 
         if not os.path.exists(config_path):
@@ -58,8 +74,8 @@ def run_all_experiments(config_dir: str,
             print(f"Configuration validation error in {config_file}: {ve}")
             continue
 
-        # Iterate over each tree level
-        for level in cut_tree_levels:
+        # Iterate over each tree level for this configuration file
+        for level in current_levels:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             # Adding a slight sleep to ensure different timestamps
             time.sleep(1.0)
@@ -86,11 +102,19 @@ def run_all_experiments(config_dir: str,
             # Update W&B project name
             config['wandb']['project'] = wandb_project_name
 
-            # Train the model
-            train_model(config, experiment_folder, config_path, level)
+            # Train the model with error handling in case it fails.
+            try:
+                train_model(config, experiment_folder, config_path, level)
+            except Exception as e:
+                print(f"Error during training for {config_file} at level {level}: {e}")
+                # Optionally, log the error, save the state, or even break if desired.
+                continue
 
             # Extract and save embeddings
-            extract_and_save_embeddings(config, level, experiment_folder)
+            try:
+                extract_and_save_embeddings(config, level, experiment_folder)
+            except Exception as e:
+                print(f"Error during embedding extraction for {config_file} at level {level}: {e}")
 
             # Finish the W&B run to ensure it's properly logged
             wandb.finish()
@@ -98,27 +122,38 @@ def run_all_experiments(config_dir: str,
     print("\nAll experiments completed successfully.")
 
 if __name__ == "__main__":
+
     # Define parameters
     config_directory = '/scratch/project_465001738/jozefov_147/PhantoMS/phantoms/models/retrieval/configs_server'
-    experiment_parent_directory = '/scratch/project_465001738/jozefov_147/PhantoMS/experiments_run/lumi_full_test'
+    experiment_parent_directory = '/scratch/project_465001738/jozefov_147/PhantoMS/experiments_run/lumi_cut_trees_MSE'
 
     configuration_files = [
         'config_skip_connection_LUMI.yml',
-        # 'config_skip_connection_bonus.yml',
-        # 'config_skip_connection_dreams.yml',
-        # 'config_skip_connection_dreams_bonus.yml'
+        'config_skip_connection_bonus_LUMI.yml',
+        'config_skip_connection_dreams_LUMI.yml',
+        'config_skip_connection_dreams_bonus_LUMI.yml'
     ]
     tree_levels = [0, 1, 2, 3]
 
-    wandb_project_name = 'lumi_full_test'
+    wandb_project_name = 'lumi_cut_trees_MSE'
+
+    # Optional resume parameters:
+    # To resume from a failure at, for example, 'config_skip_connection_dreams_LUMI.yml' and tree level 2,
+    # set resume_config and resume_level accordingly.
+    # resume_config = 'config_skip_connection_dreams_LUMI.yml'
+    # resume_level = 3
+    resume_config = None
+    resume_level = None
 
     # Authenticate with W&B
     print("Logging into Weights & Biases...")
     wandb.login()
 
-    # Run all experiments
+    # Run all experiments (with resume capability)
     run_all_experiments(config_dir=config_directory,
                         experiment_parent_dir=experiment_parent_directory,
                         config_files=configuration_files,
                         cut_tree_levels=tree_levels,
-                        wandb_project_name=wandb_project_name)
+                        wandb_project_name=wandb_project_name,
+                        resume_config=resume_config,
+                        resume_level=resume_level)
