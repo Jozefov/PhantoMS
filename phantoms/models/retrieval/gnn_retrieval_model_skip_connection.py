@@ -6,7 +6,7 @@ from massspecgym.models.base import Stage
 from torch_geometric.nn import global_mean_pool
 from phantoms.layers.gcn_layers import GCNLayer, GATLayer, GINLayer, SAGELayer
 from phantoms.heads.retrieval_heads import SkipConnectionRetrievalHead
-from phantoms.optimizations.loss_functions import MSELoss
+from phantoms.optimizations.loss_functions import MSELoss, CosineSimilarityLoss
 from massspecgym.models.retrieval.base import RetrievalMassSpecGymModel
 from phantoms.utils.constants import ELEMENTS
 from phantoms.utils.data import encode_formula, smiles_to_formula
@@ -76,12 +76,11 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
             num_skipblocks=num_skipblocks,
             dropout_rate=dropout_rate
         )
-        self.loss_fn = MSELoss()
+        # self.loss_fn = MSELoss()
+        self.loss_fn = CosineSimilarityLoss()
 
     def forward(self, data, collect_embeddings=False, smiles_batch: Optional[List[str]] = None):
-        # print("[FORWARD] data.x device:", data.x.device)
-        # print("[FORWARD] data.edge_index device:", data.edge_index.device)
-        # print("[FORWARD] data.batch device:", data.batch.device)
+
         x, edge_index, batch = data.x, data.edge_index, data.batch
         embeddings = {}
         # Process each GNN layer.
@@ -140,53 +139,3 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
         scores = F.cosine_similarity(fp_pred_repeated, cands)
         return {'loss': loss, 'scores': scores}
 
-    # def transfer_batch_to_device(self, batch, device, dataloader_idx):
-    #     print(f"\n[TRANSFER] Received batch on device(s):")
-    #     # Print device info for keys before transfer
-    #     if isinstance(batch, dict):
-    #         if "spec" in batch and hasattr(batch["spec"], "to"):
-    #             try:
-    #                 print("  Before transfer - batch['spec'].x device:", batch["spec"].x.device)
-    #             except Exception as e:
-    #                 print("  Could not print batch['spec'].x device:", e)
-    #         for key, value in batch.items():
-    #             if isinstance(value, torch.Tensor):
-    #                 print(f"  Before transfer - key '{key}' tensor device: {value.device}")
-    #             elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], torch.Tensor):
-    #                 print(f"  Before transfer - key '{key}' first element device: {value[0].device}")
-    #     else:
-    #         try:
-    #             print("  Before transfer - batch device:", batch.device)
-    #         except Exception as e:
-    #             print("  Could not print batch device:", e)
-    #
-    #     # Perform the transfer
-    #     if isinstance(batch, dict):
-    #         if "spec" in batch and hasattr(batch["spec"], "to"):
-    #             batch["spec"] = batch["spec"].to(device)
-    #         for key, value in batch.items():
-    #             if isinstance(value, torch.Tensor):
-    #                 batch[key] = value.to(device)
-    #             elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], torch.Tensor):
-    #                 batch[key] = [v.to(device) for v in value]
-    #     else:
-    #         batch = batch.to(device)
-    #
-    #     print(f"[TRANSFER] After transferring to {device}:")
-    #     if isinstance(batch, dict):
-    #         if "spec" in batch and hasattr(batch["spec"], "to"):
-    #             try:
-    #                 print("  After transfer - batch['spec'].x device:", batch["spec"].x.device)
-    #             except Exception as e:
-    #                 print("  Could not print batch['spec'].x device after transfer:", e)
-    #         for key, value in batch.items():
-    #             if isinstance(value, torch.Tensor):
-    #                 print(f"  After transfer - key '{key}' tensor device: {value.device}")
-    #             elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], torch.Tensor):
-    #                 print(f"  After transfer - key '{key}' first element device: {value[0].device}")
-    #     else:
-    #         try:
-    #             print("  After transfer - batch device:", batch.device)
-    #         except Exception as e:
-    #             print("  Could not print batch device after transfer:", e)
-    #     return batch
