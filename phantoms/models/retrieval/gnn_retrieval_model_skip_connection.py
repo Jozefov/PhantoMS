@@ -88,10 +88,13 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
             x, layer_embed = layer(x, edge_index, batch, collect_embeddings=collect_embeddings)
             if collect_embeddings and layer_embed is not None:
                 if self.gnn_layer_type == "GATConv":
-                    # layer_embed is a dict with keys "overall", "head_1", "head_2", ...
-                    embeddings[f"gnn_{idx}"] = layer_embed["overall"]
+                    # Save both mean and max pooled overall embeddings.
+                    embeddings[f"gnn_{idx}_overall_mean"] = layer_embed["overall_mean"]
+                    embeddings[f"gnn_{idx}_overall_max"] = layer_embed["overall_max"]
+                    # Save both mean and max pooled embeddings for each head.
                     for j in range(1, self.nheads + 1):
-                        embeddings[f"gnn_{idx}_head_{j}"] = layer_embed[f"head_{j}"]
+                        embeddings[f"gnn_{idx}_head_{j}_mean"] = layer_embed[f"head_{j}_mean"]
+                        embeddings[f"gnn_{idx}_head_{j}_max"] = layer_embed[f"head_{j}_max"]
                 else:
                     embeddings[f"gcn_{idx}"] = layer_embed
         # Global pooling: Note that if using GAT, the last layer already outputs features of dimension in_channels = nheads * hidden_channels.

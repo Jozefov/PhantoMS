@@ -65,20 +65,27 @@ class GATLayer(nn.Module):
         # Compute convolution output (pre-activation)
         x_conv = self.conv(x, edge_index)  # shape: [num_nodes, heads * hidden_channels]
 
-        # Collect embeddings from pre-activation features if requested
         out_dict = None
         if collect_embeddings:
             # Reshape into [num_nodes, heads, hidden_channels]
             x_heads = x_conv.view(x_conv.size(0), self.heads, -1)
-            # Overall pooled: average over heads, then global pool.
-            overall = global_mean_pool(x_heads.mean(dim=1), batch)  # [batch, hidden_channels]
-            head_embeddings = {}
-            for h in range(self.heads):
-                head_embeddings[f"head_{h + 1}"] = global_mean_pool(x_heads[:, h, :], batch)  # [batch, hidden_channels]
-            out_dict = {"overall": overall}
-            out_dict.update(head_embeddings)
+            # Compute overall pooled embeddings using mean and max pooling.
+            overall_mean = global_mean_pool(x_heads.mean(dim=1), batch)  # [batch, hidden_channels]
+            overall_max = global_max_pool(x_heads.mean(dim=1), batch)  # [batch, hidden_channels]
 
-        # Now apply activation
+            # Compute head-specific embeddings with both pooling methods.
+            head_mean_embeddings = {}
+            head_max_embeddings = {}
+            for h in range(self.heads):
+                head_mean_embeddings[f"head_{h + 1}_mean"] = global_mean_pool(x_heads[:, h, :], batch)
+                head_max_embeddings[f"head_{h + 1}_max"] = global_max_pool(x_heads[:, h, :], batch)
+
+            # Combine the overall and per-head pooled embeddings into one dictionary.
+            out_dict = {"overall_mean": overall_mean, "overall_max": overall_max}
+            out_dict.update(head_mean_embeddings)
+            out_dict.update(head_max_embeddings)
+
+        # Now apply the activation function
         x = self.relu(x_conv)
         return x, out_dict
 
