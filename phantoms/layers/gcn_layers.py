@@ -62,21 +62,25 @@ class GATLayer(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x, edge_index, batch, collect_embeddings=False):
-        x = self.conv(x, edge_index)  # shape: [num_nodes, heads * hidden_channels]
-        x = self.relu(x)
+        # Compute convolution output (pre-activation)
+        x_conv = self.conv(x, edge_index)  # shape: [num_nodes, heads * hidden_channels]
+
+        # Collect embeddings from pre-activation features if requested
+        out_dict = None
         if collect_embeddings:
             # Reshape into [num_nodes, heads, hidden_channels]
-            x_heads = x.view(x.size(0), self.heads, -1)
-            # Overall pooled: average over heads, then global mean pool.
+            x_heads = x_conv.view(x_conv.size(0), self.heads, -1)
+            # Overall pooled: average over heads, then global pool.
             overall = global_mean_pool(x_heads.mean(dim=1), batch)  # [batch, hidden_channels]
             head_embeddings = {}
             for h in range(self.heads):
                 head_embeddings[f"head_{h + 1}"] = global_mean_pool(x_heads[:, h, :], batch)  # [batch, hidden_channels]
             out_dict = {"overall": overall}
             out_dict.update(head_embeddings)
-            return x, out_dict
-        else:
-            return x, None
+
+        # Now apply activation
+        x = self.relu(x_conv)
+        return x, out_dict
 
 
 class GINLayer(nn.Module):
