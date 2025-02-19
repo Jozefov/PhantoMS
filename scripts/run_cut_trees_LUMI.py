@@ -30,6 +30,7 @@ def run_all_experiments(config_dir: str,
         resume_config (Optional[str]): Configuration file to resume from.
         resume_level (Optional[int]): Tree level within resume_config to resume from.
     """
+
     # Set global seeds for reproducibility
     set_global_seeds(42)
 
@@ -125,7 +126,7 @@ if __name__ == "__main__":
 
     # Define parameters
     config_directory = '/scratch/project_465001738/jozefov_147/PhantoMS/phantoms/models/retrieval/configs_server'
-    experiment_parent_directory = '/scratch/project_465001738/jozefov_147/PhantoMS/experiments_run/lumi_cut_trees_MSE'
+    experiment_parent_directory = '/scratch/project_465001738/jozefov_147/PhantoMS/experiments_run/lumi_cut_trees_COSINE'
 
     configuration_files = [
         'config_skip_connection_LUMI.yml',
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     ]
     tree_levels = [0, 1, 2, 3]
 
-    wandb_project_name = 'lumi_cut_trees_MSE'
+    wandb_project_name = 'lumi_cut_trees_COSINE'
 
     # Optional resume parameters:
     # To resume from a failure at, for example, 'config_skip_connection_dreams_LUMI.yml' and tree level 2,
