@@ -12,6 +12,7 @@ data:
   spectra_mgf: "/scratch/project_465001738/jozefov_147/data/MSn/20241211_msn_library_pos_all_lib_MSn.mgf"
   candidates_json: "/scratch/project_465001738/jozefov_147/data/MSn/MassSpecGymMSn_retrieval_candidates_formula.json"
   split_file: "/scratch/project_465001738/jozefov_147/data/MSn/20241211_split.tsv"
+  cache_pth: "/scratch/project/open-26-5/jozefov_147/PhantoMS/data/MassSpecGymMSn_retrieval_candidates_formula.h5"
   max_allowed_deviation: 0.005
   batch_size: 128
   num_workers: 1
@@ -35,7 +36,7 @@ metrics:
   at_ks: [1, 5, 20]
 
 optimizer:
-  lr: 0.0005
+  lr: 0.0001
   weight_decay: 0.0001
 
 trainer:
