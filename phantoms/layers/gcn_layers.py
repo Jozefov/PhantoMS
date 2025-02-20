@@ -1,6 +1,6 @@
 import torch.nn as nn
 from torch_geometric.nn import GCNConv, GATConv, GINConv, SAGEConv
-from torch_geometric.nn import global_mean_pool
+from torch_geometric.nn import global_mean_pool, global_max_pool
 
 class GCNLayer(nn.Module):
     def __init__(self, in_channels: int, out_channels: int):
