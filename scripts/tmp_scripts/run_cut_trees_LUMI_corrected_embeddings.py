@@ -10,26 +10,19 @@ this script:
   - Extracts new embeddings using the updated model (which collects pre-ReLU activations).
   - Saves the new embeddings in a new subfolder called "corrected_embeddings".
 
-Usage:
-  python3 run_cut_trees_LUMI_corrected_embeddings.py
-
-Submit this script via your SBATCH script.
 """
 
 import os
 import re
 import yaml
-import time
-import torch
-import numpy as np
 
-# Import dataset, featurizer, and model modules.
+
 from massspecgym.featurize import SpectrumFeaturizer
 from massspecgym.data.datasets import MSnRetrievalDataset
 from massspecgym.data.transforms import MolFingerprinter
 from massspecgym.data.data_module import MassSpecDataModule
 from phantoms.models.retrieval.gnn_retrieval_model_skip_connection import GNNRetrievalSkipConnections
-from phantoms.utils.data import save_embeddings  # our previously defined function
+from phantoms.utils.data import save_embeddings
 
 def process_experiment_folder(exp_folder: str):
     """
@@ -37,7 +30,6 @@ def process_experiment_folder(exp_folder: str):
     re-create the test dataset (with proper tree depth), extract embeddings
     using the corrected (pre-ReLU) version of the model, and save them.
     """
-    # Extract tree depth from folder name; expected pattern: "cut_tree_{depth}"
     m = re.search(r'cut_tree_(\d+)', exp_folder)
     if not m:
         print(f"WARNING: Could not determine tree depth from folder name {exp_folder}. Skipping.")
@@ -45,7 +37,7 @@ def process_experiment_folder(exp_folder: str):
     tree_depth = int(m.group(1))
     print(f"\n=== Processing folder: {exp_folder} (tree depth: {tree_depth}) ===")
 
-    # Find the config file inside the 'configs' subfolder.
+
     config_dir = os.path.join(exp_folder, "configs")
     if not os.path.exists(config_dir):
         print(f"WARNING: No 'configs' folder found in {exp_folder}. Skipping.")
@@ -61,14 +53,12 @@ def process_experiment_folder(exp_folder: str):
         config = yaml.safe_load(cf)
     print(f"Loaded config: {config_path}")
 
-    # Load the model checkpoint from the "checkpoints" folder.
     ckpt_path = os.path.join(exp_folder, "checkpoints", "final_model.ckpt")
     if not os.path.exists(ckpt_path):
         print(f"WARNING: Checkpoint file not found at {ckpt_path}. Skipping folder {exp_folder}.")
         return
 
     print(f"Loading model checkpoint from: {ckpt_path}")
-    # Create model from config (for retrieval task) and load checkpoint.
     model = GNNRetrievalSkipConnections.load_from_checkpoint(
         ckpt_path,
         hidden_channels=config['model']['hidden_channels'],
@@ -86,9 +76,8 @@ def process_experiment_folder(exp_folder: str):
         lr=config['optimizer']['lr'],
         weight_decay=config['optimizer']['weight_decay']
     )
-    model.eval()  # set to evaluation mode
+    model.eval()
 
-    # Build the test dataset. For retrieval, we use MSnRetrievalDataset.
     featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
     dataset = MSnRetrievalDataset(
         pth=config['data']['spectra_mgf'],
@@ -112,20 +101,18 @@ def process_experiment_folder(exp_folder: str):
     data_module.setup("test")
     test_loader = data_module.test_dataloader()
 
-    # Create a new folder "corrected_embeddings" inside the experiment folder.
     corrected_emb_dir = os.path.join(exp_folder, "corrected_embeddings")
     os.makedirs(corrected_emb_dir, exist_ok=True)
 
     print("Extracting corrected embeddings (using pre-ReLU activations)...")
-    # Extract and save new embeddings using our save_embeddings function.
     save_embeddings(model, test_loader, corrected_emb_dir)
     print(f"Saved corrected embeddings to: {corrected_emb_dir}")
 
 def main():
-    # Parent directory containing experiment folders.
+    # Parent directory
     parent_dir = "/scratch/project_465001738/jozefov_147/PhantoMS/experiments_run/lumi_cut_trees_COSINE"
 
-    # Hardcoded list of target experiment folder names:
+    # List of target experiment folder names:
     target_folder_names = [
         "config_skip_connection_LUMI_cut_tree_0_2025-02-19_09-00-57",
         "config_skip_connection_LUMI_cut_tree_1_2025-02-19_09-38-36",
@@ -145,7 +132,6 @@ def main():
         "config_skip_connection_dreams_bonus_LUMI_cut_tree_3_2025-02-19_19-57-08"
     ]
 
-    # Create full paths for each target folder.
     target_folders = [os.path.join(parent_dir, name) for name in target_folder_names]
 
     # Process each target folder.
