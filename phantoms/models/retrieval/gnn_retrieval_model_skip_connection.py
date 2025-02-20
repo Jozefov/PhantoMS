@@ -1,4 +1,3 @@
-# gnn_retrieval_model_skip_connection.py
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
