@@ -1,13 +1,15 @@
 task: "tokenizer"
 
 data:
-  molecule_tsv: "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/min_sample_sample.tsv"
+  molecule_tsvs:
+    - "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_1M_murcko_train_smiles.tsv"
+    - "/Users/macbook/CODE/Majer:MassSpecGym/data/MSn/20241211_4M_murcko_train_smiles.tsv"
   smiles_column: smiles
 
 model:
-  max_len: 200
-  vocab_size: 1000
+  max_len: 50
+  vocab_size: 3000
   min_frequency: 2
-  smiles_tokenizer_save_path: ".smiles_tokenizer.json"
+  smiles_tokenizer_save_path: "smiles_tokenizer.json"
 
-experiment_base_name: "tokenizer_test"
+experiment_base_name: "tokenizer_large"
