@@ -12,15 +12,32 @@ def train_tokenizer(config, experiment_folder, config_file_path):
     shutil.copyfile(config_file_path, config_save_path)
     print(f"Configuration saved to {config_save_path}")
 
-    print("Training tokenizer from TSV file.")
-    tsv_path = config['data'].get('molecule_tsv')
-    if tsv_path is None:
-        raise ValueError("For tokenizer training, 'molecule_tsv' must be provided in config['data'].")
+    print("Training tokenizer from TSV file(s).")
 
-    # Read the TSV file and extract SMILES strings.
-    df = pd.read_csv(tsv_path, sep="\t")
-    smiles_list = df["smiles"].tolist()
-    print(f"Found {len(smiles_list)} SMILES in column 'smiles'.")
+    # Check if a list of TSV files is provided, otherwise fallback to a single TSV.
+    tsv_files = None
+    if 'molecule_tsvs' in config['data']:
+        tsv_files = config['data']['molecule_tsvs']
+    elif 'molecule_tsv' in config['data']:
+        tsv_files = [config['data']['molecule_tsv']]
+    else:
+        raise ValueError(
+            "For tokenizer training, provide 'molecule_tsvs' (list of paths) or 'molecule_tsv' in config['data'].")
+
+    smiles_list = []
+    for tsv_path in tsv_files:
+        if not os.path.exists(tsv_path):
+            print(f"WARNING: TSV file {tsv_path} does not exist. Skipping.")
+            continue
+        df = pd.read_csv(tsv_path, sep="\t")
+        if "smiles" not in df.columns:
+            print(f"WARNING: 'smiles' column not found in {tsv_path}. Skipping.")
+            continue
+        curr_smiles = df["smiles"].tolist()
+        print(f"Found {len(curr_smiles)} SMILES in {tsv_path}.")
+        smiles_list.extend(curr_smiles)
+
+    print(f"Total SMILES for training: {len(smiles_list)}")
 
     # Initialize a new Byte-level BPE tokenizer with the specified maximum length.
     max_len = config['model'].get('max_len', 200)
