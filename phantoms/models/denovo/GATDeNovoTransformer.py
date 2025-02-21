@@ -19,14 +19,14 @@ from torch.nn import TransformerDecoder, TransformerDecoderLayer
 
 class GATDeNovoTransformer(DeNovoMassSpecGymModel):
     """
-    Transformer model for de novo SMILES generation with a GAT encoder and a multi-layer Transformer decoder.
+    Transformer model for de novo SMILES generation with a GAT encoder and a multi-layer Transformer de_novo_scripts.
 
     When collect_embeddings=True in the forward pass, the returned dictionary (under key "embeddings") contains:
       - "gnn_i": global mean pooled output after GAT layer i.
       - "gnn_i_head_j": per-head pooled outputs from GAT layer i (for each head j).
       - "encoder_projection": output of encoder_fc after (optionally) concatenating the formula branch.
-      - For each decoder layer i:
-            • "decoder_layer_i": mean-pooled output of that decoder layer.
+      - For each de_novo_scripts layer i:
+            • "decoder_layer_i": mean-pooled output of that de_novo_scripts layer.
             • "decoder_layer_i_head_j": projection of the mean per head j of that layer (each projected to d_model).
 
     Decoding supports greedy (beam_width=1) and beam search (beam_width>1).
@@ -227,7 +227,7 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
                 for h in range(self.nhead):
                     embeddings[f"decoder_layer_{i}_head_{h + 1}"] = head_means[:, h, :].detach()
         else:
-            # If not collecting embeddings, simply run the whole decoder:
+            # If not collecting embeddings, simply run the whole de_novo_scripts:
             decoder_input = self.transformer_decoder(
                 tgt=tgt_embed, memory=memory, tgt_mask=causal_mask, tgt_key_padding_mask=tgt_key_padding_mask
             )
@@ -348,14 +348,14 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
 
     def load_pretrained_decoder(self, pretrained_state_dict: dict):
         """
-        Loads pretrained decoder weights (e.g., from MoleculeDecoder) into the decoder parts of this model.
-        Only keys starting with "decoder", "pos_encoder", "decoder_embed", or "decoder_fc" are updated.
+        Loads pretrained de_novo_scripts weights (e.g., from MoleculeDecoder) into the de_novo_scripts parts of this model.
+        Only keys starting with "de_novo_scripts", "pos_encoder", "decoder_embed", or "decoder_fc" are updated.
         """
         model_dict = self.state_dict()
         pretrained_keys = {
             k: v for k, v in pretrained_state_dict.items()
             if k in model_dict and (
-                    k.startswith("decoder") or
+                    k.startswith("de_novo_scripts") or
                     k.startswith("pos_encoder") or
                     k.startswith("decoder_embed") or
                     k.startswith("decoder_fc")
@@ -363,4 +363,4 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
         }
         model_dict.update(pretrained_keys)
         self.load_state_dict(model_dict)
-        print("Pretrained decoder weights loaded into GATDeNovoTransformer.")
+        print("Pretrained de_novo_scripts weights loaded into GATDeNovoTransformer.")

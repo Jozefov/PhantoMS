@@ -29,7 +29,7 @@ class ByteBPETokenizerWithSpecialTokens:
             bpe_model = models.BPE(unk_token=UNK_TOKEN)
             self.tokenizer = Tokenizer(bpe_model)
 
-            # Set pre-tokenizer and decoder
+            # Set pre-tokenizer and de_novo_scripts
             self.tokenizer.pre_tokenizer = ByteLevel()
             self.tokenizer.decoder = ByteLevelDecoder()
 
