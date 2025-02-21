@@ -1,0 +1,27 @@
+data:
+  molecule_tsvs:
+    - "/scratch/project_465001738/jozefov_147/data/MSn/20241211_1M_murcko_train_smiles.tsv"
+    - "/scratch/project_465001738/jozefov_147/data/MSn/20241211_4M_murcko_train_smiles.tsv"
+  batch_size: 32
+
+model:
+  max_len: 200 # max de_novo_scripts SMILES, not tokenizer
+  vocab_size: 3000
+  min_frequency: 2
+  d_model: 1024
+  nhead: 4
+  num_decoder_layers: 4
+  dropout_rate: 0.1
+  smiles_tokenizer_path: "/scratch/project_465001738/jozefov_147/data/MSn/de_novo_scripts/smiles_tokenizer.json"
+
+trainer:
+  max_epochs: 10
+  accelerator: "gpu"
+  devices: 8
+  log_every_n_steps: 10
+
+experiment_base_name: "decoder_training"
+
+wandb:
+  project: "PhantoMS_Decoder"
+  entity: "jozefov-iocb-prague"
