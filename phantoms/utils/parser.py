@@ -37,8 +37,8 @@ def train_model(config, experiment_folder, config_file_path, cut_tree_level=None
     print(f"\nStarting training for {experiment_folder}")
     set_global_seeds(config.get("seed", 42))
 
-    # For the tokenizer and decoder tasks we do not need a featurizer.
-    task = config.get("task", "retrieval")  # possible values: "retrieval", "denovo", "decoder", "tokenizer"
+    # For the tokenizer and de_novo_scripts tasks we do not need a featurizer.
+    task = config.get("task", "retrieval")  # possible values: "retrieval", "denovo", "de_novo_scripts", "tokenizer"
 
     # For tasks other than tokenizer, we may (if needed) initialize a featurizer.
     featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
@@ -114,7 +114,7 @@ def train_model(config, experiment_folder, config_file_path, cut_tree_level=None
         if config['model'].get('load_pretrained_decoder', False):
             pretrained_state = torch.load(config['model'].get('decoder_pretrained_path'), map_location="cpu")
             model.load_pretrained_decoder(pretrained_state)
-            print("Loaded pretrained decoder into de novo model.")
+            print("Loaded pretrained de_novo_scripts into de novo model.")
     else:
         raise ValueError(f"Unknown task: {task}")
 
