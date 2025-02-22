@@ -15,7 +15,6 @@ def main():
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    # Create a unique experiment folder under the "denovo" parent directory.
     base_exp_dir = "/scratch/project_465001738/jozefov_147/PhantoMS/experiments_run/denovo"
     os.makedirs(base_exp_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -26,7 +25,6 @@ def main():
     os.makedirs(experiment_folder, exist_ok=True)
     print(f"Experiment folder: {experiment_folder}")
 
-    # Call the train_decoder function (from phantoms.models.denovo.parser)
     train_decoder(config, experiment_folder, config_path)
 
 if __name__ == "__main__":
