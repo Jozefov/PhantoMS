@@ -73,7 +73,7 @@ class GATLayer(nn.Module):
             overall_mean = global_mean_pool(x_heads.mean(dim=1), batch)  # [batch, hidden_channels]
             overall_max = global_max_pool(x_heads.mean(dim=1), batch)  # [batch, hidden_channels]
 
-            # Compute head-specific embeddings with both pooling methods.
+            # Compute head-specific embeddings with max, mean pooling methods.
             head_mean_embeddings = {}
             head_max_embeddings = {}
             for h in range(self.heads):
@@ -85,7 +85,6 @@ class GATLayer(nn.Module):
             out_dict.update(head_mean_embeddings)
             out_dict.update(head_max_embeddings)
 
-        # Now apply the activation function
         x = self.relu(x_conv)
         return x, out_dict
 

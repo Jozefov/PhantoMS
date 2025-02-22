@@ -1,16 +1,6 @@
 # List of elements the most comon in nature and used for formula encoding
 ELEMENTS = ['C', 'H', 'N', 'O', 'S', 'P', 'Cl', 'Br', 'F', 'I']
 
-# """Global variables used across the package."""
-# import pathlib
-#
-# # Dirs
-# PHANTOMS_ROOT_DIR = pathlib.Path(__file__).parent.absolute()
-# PHANTOMS_REPO_DIR = PHANTOMS_ROOT_DIR.parent
-# PHANTOMS_DATA_DIR = PHANTOMS_REPO_DIR / 'data'
-# PHANTOMS_TEST_RESULTS_DIR = PHANTOMS_DATA_DIR / 'test_results'
-# PHANTOMS_ASSETS_DIR = PHANTOMS_REPO_DIR / 'assets'
-
 # Special tokens
 PAD_TOKEN = "<pad>"
 SOS_TOKEN = "<s>"

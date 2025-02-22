@@ -114,8 +114,6 @@ class SkipConnectionRetrievalHead(nn.Module):
             embeddings['head_fc_final'] = x.detach().cpu()
 
         out = self.output_layer(x)
-        # if collect_embeddings:
-        #     embeddings['head_output'] = out.detach().cpu()
 
         if collect_embeddings:
             return out, embeddings

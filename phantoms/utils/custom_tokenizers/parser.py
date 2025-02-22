@@ -6,7 +6,6 @@ from phantoms.utils.custom_tokenizers.BPE_tokenizers import ByteBPETokenizerWith
 
 
 def train_tokenizer(config, experiment_folder, config_file_path):
-    # Create and save the configuration file for reference.
     os.makedirs(os.path.join(experiment_folder, 'configs'), exist_ok=True)
     config_save_path = os.path.join(experiment_folder, 'configs', os.path.basename(config_file_path))
     shutil.copyfile(config_file_path, config_save_path)
@@ -39,14 +38,11 @@ def train_tokenizer(config, experiment_folder, config_file_path):
 
     print(f"Total SMILES for training: {len(smiles_list)}")
 
-    # Initialize a new Byte-level BPE tokenizer with the specified maximum length.
     max_len = config['model'].get('max_len', 200)
     tokenizer = ByteBPETokenizerWithSpecialTokens(max_len=max_len)
 
-    # Get the save path from config.
     SMILES_TOKENIZER_SAVE_PATH = config['model'].get('smiles_tokenizer_save_path', "smiles_tokenizer.json")
 
-    # Train the tokenizer.
     tokenizer.train(
         texts=smiles_list,
         vocab_size=config['model'].get('vocab_size', 1000),
@@ -67,7 +63,6 @@ if __name__ == "__main__":
     config_path = sys.argv[1]
     experiment_folder = sys.argv[2]
 
-    # Load configuration from YAML.
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 

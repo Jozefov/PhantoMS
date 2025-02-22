@@ -17,7 +17,7 @@ class GNNRetrievalModel(RetrievalMassSpecGymModel):
             *args,
             **kwargs
     ):
-        """GNN-based retrieval model for MSn spectral trees."""
+        """GNN-based introductory model for a retrieval task on MSn spectral trees."""
         super().__init__(*args, **kwargs)
 
         # Define GCN Layers

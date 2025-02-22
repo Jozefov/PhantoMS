@@ -49,7 +49,6 @@ def encode_formula(formula: str) -> torch.Tensor:
         Returns:
             torch.Tensor: Encoded formula vector of shape [len(ELEMENTS)].
         """
-        # Initialize count dictionary
         counts = {element: 0 for element in ELEMENTS}
 
         # Parse the formula
@@ -78,7 +77,7 @@ def save_embeddings(model, dataloader, save_dir):
 
     with torch.no_grad():
         for batch_idx, batch in enumerate(dataloader):
-            embeddings = model.get_embeddings(batch)  # Dict of embeddings
+            embeddings = model.get_embeddings(batch)
 
             for layer_name, embed in embeddings.items():
                 if layer_name not in embeddings_dict:

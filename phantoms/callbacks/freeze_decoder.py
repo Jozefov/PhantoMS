@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 
 class FreezeDecoderCallback(pl.Callback):
+    # For freezing decoder when training for de novo task.
     def __init__(self, freeze_epochs: int = 3):
         self.freeze_epochs = freeze_epochs
 

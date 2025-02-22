@@ -37,10 +37,9 @@ def train_model(config, experiment_folder, config_file_path, cut_tree_level=None
     print(f"\nStarting training for {experiment_folder}")
     set_global_seeds(config.get("seed", 42))
 
-    # For the tokenizer and de_novo_scripts tasks we do not need a featurizer.
-    task = config.get("task", "retrieval")  # possible values: "retrieval", "denovo", "de_novo_scripts", "tokenizer"
 
-    # For tasks other than tokenizer, we may (if needed) initialize a featurizer.
+    task = config.get("task", "retrieval")
+
     featurizer = SpectrumFeaturizer(config['featurizer'], mode='torch')
 
     if task == "retrieval":

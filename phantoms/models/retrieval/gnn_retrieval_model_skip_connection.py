@@ -82,7 +82,7 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
 
         x, edge_index, batch = data.x, data.edge_index, data.batch
         embeddings = {}
-        # Process each GNN layer.
+
         for idx, layer in enumerate(self.gcn_layers, 1):
             x, layer_embed = layer(x, edge_index, batch, collect_embeddings=collect_embeddings)
             if collect_embeddings and layer_embed is not None:
@@ -96,9 +96,9 @@ class GNNRetrievalSkipConnections(RetrievalMassSpecGymModel):
                         embeddings[f"gnn_{idx}_head_{j}_max"] = layer_embed[f"head_{j}_max"]
                 else:
                     embeddings[f"gcn_{idx}"] = layer_embed
-        # Global pooling: Note that if using GAT, the last layer already outputs features of dimension in_channels = nheads * hidden_channels.
-        x_pooled = global_mean_pool(x, batch)  # Shape: [batch, in_channels]
-        # No additional reduction is needed.
+
+        x_pooled = global_mean_pool(x, batch)
+
         if self.use_formula:
             if smiles_batch is None:
                 raise ValueError("smiles_batch must be provided when use_formula is enabled.")
