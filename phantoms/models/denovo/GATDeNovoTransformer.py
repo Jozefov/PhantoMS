@@ -5,7 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import typing as T
 from typing import List, Optional, Dict, Tuple
-from torch_geometric.nn import GATConv, global_mean_pool
+from torch_geometric.nn import global_mean_pool
+from phantoms.layers.gcn_layers import GATLayer
 
 from massspecgym.models.base import Stage
 from massspecgym.models.de_novo.base import DeNovoMassSpecGymModel
@@ -82,22 +83,21 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
         self.gat_layers = nn.ModuleList()
         # Use a GATConv with concatenation; its output shape will be [num_nodes, nhead * (d_model/nhead)] = [num_nodes, d_model]
         self.gat_layers.append(
-            GATConv(
+            GATLayer(
                 in_channels=input_dim,
-                out_channels=d_model // num_gat_heads,
+                hidden_channels=d_model // num_gat_heads,
                 heads=num_gat_heads,
-                dropout=gat_dropout,
-                add_self_loops=True
+                dropout=gat_dropout
             )
         )
+        # Subsequent layers: d_model -> d_model
         for _ in range(num_gat_layers - 1):
             self.gat_layers.append(
-                GATConv(
+                GATLayer(
                     in_channels=d_model,
-                    out_channels=d_model // num_gat_heads,
+                    hidden_channels=d_model // num_gat_heads,
                     heads=num_gat_heads,
-                    dropout=gat_dropout,
-                    add_self_loops=True
+                    dropout=gat_dropout
                 )
             )
 
@@ -163,24 +163,13 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
 
         # --- GAT Encoder with per-head extraction ---
         for i, gat in enumerate(self.gat_layers, 1):
-            x = gat(x, edge_index)  # shape: [num_nodes, d_model] (concatenated output)
-            x = F.elu(x)
-            # Overall pooled output (always needed)
-            # pooled = global_mean_pool(x, batch_idx)  # [batch, d_model]
-            if collect_embeddings:
-                pooled = global_mean_pool(x, batch_idx)  # [batch, d_model]
-                embeddings[f"gnn_{i}"] = pooled.detach()
-                # Also extract per-head embeddings
-                head_dim = self.d_model // self.nhead  # compute only if needed
-                x_heads = x.view(x.size(0), self.nhead, head_dim)  # reshape to [num_nodes, nhead, head_dim]
-                for h in range(self.nhead):
-                    head_h = x_heads[:, h, :]  # [num_nodes, head_dim]
-                    pooled_head = global_mean_pool(head_h, batch_idx)  # [batch, head_dim]
-                    # Store each head’s pooled embedding
-                    embeddings[f"gnn_{i}_head_{h + 1}"] = pooled_head.detach()
-        gnn_out = global_mean_pool(x, batch_idx)  # final overall pooled output
-        # if collect_embeddings:
-        #     embeddings["gnn_pool"] = gnn_out.detach()
+            x, layer_embed = gat(x, edge_index, batch_idx, collect_embeddings=collect_embeddings)
+            if collect_embeddings and layer_embed is not None:
+                # Store the pooled outputs from this layer.
+                for key, value in layer_embed.items():
+                    embeddings[f"gnn_{i}_{key}"] = value
+        # Final overall pooled output from the last GAT layer.
+        gnn_out = global_mean_pool(x, batch_idx)
 
         # --- Formula Integration ---
         if self.use_formula:
@@ -292,8 +281,7 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
         spec = batch["spec"]
         x, edge_index, batch_idx = spec.x, spec.edge_index, spec.batch
         for gat in self.gat_layers:
-            x = gat(x, edge_index)
-            x = F.elu(x)
+            x, _ = gat(x, edge_index, batch_idx, collect_embeddings=False)
         x = global_mean_pool(x, batch_idx)
         if self.use_formula:
             # For decoding, also compute formula embedding using smiles in batch["mol"]
