@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=56
 #SBATCH --gpus-per-node=8
 #SBATCH --mem=480G
-#SBATCH --time=48:00:00
+#SBATCH --time=32:00:00
 
 # Load necessary modules and activate your environment
 
