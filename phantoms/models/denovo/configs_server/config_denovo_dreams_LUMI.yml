@@ -1,0 +1,69 @@
+task: "denovo"
+
+featurizer:
+  features: ['spectrum_embedding']
+  feature_attributes:
+    spectrum_embedding:
+      path_to_embeddings: '/scratch/project_465001738/jozefov_147/data/MSn/MSn_DreaMS.h5'
+      identifier_col: 'identifiers'
+      embedding_cols: 'embeddings'
+      embedding_dim: 1024
+
+data:
+#  spectra_mgf: "/scratch/project_465001738/jozefov_147/data/MSn/min_sample_trees.mgf"
+  spectra_mgf: "/scratch/project_465001738/jozefov_147/data/MSn/20241211_msn_library_pos_all_lib_MSn.mgf"
+  split_file: "/scratch/project_465001738/jozefov_147/data/MSn/20241211_split.tsv"
+  max_allowed_deviation: 0.005
+  batch_size: 32
+  num_workers: 4
+  hierarchical_tree: false
+
+model:
+  node_feature_dim: 1024
+  d_model: 1024
+  nhead: 4
+  num_decoder_layers: 4
+  num_gat_layers: 3
+  num_gat_heads: 4
+  gat_dropout: 0.6
+  dropout_rate: 0.1
+  max_smiles_len: 200
+  k_predictions: 1
+  temperature: 1.0
+  pre_norm: false
+  use_formula: false
+  formula_embedding_dim: 64
+  # Pretrained tokenizer JSON file (already trained)
+  smiles_tokenizer_path: "/scratch/project_465001738/jozefov_147/data/MSn/decoder/smiles_tokenizer.json"
+  load_pretrained_decoder: true
+  # Pretrained decoder checkpoint (downloaded locally)
+  decoder_pretrained_path: "/scratch/project_465001738/jozefov_147/PhantoMS/experiments_run/denovo/config_decoder_LUMI_decoder_2025-02-21_15-19-05/smiles_decoder_pretrained.pth"
+  beam_width: 1
+  test_beam_width: 10
+  freeze_epochs: 5
+
+metrics:
+  at_ks: [1, 5, 20]
+
+optimizer:
+  lr: 0.0001
+  weight_decay: 0.0001
+
+trainer:
+  accelerator: "gpu"  # For local testing; change to "gpu" if available
+  devices: 8
+  max_epochs: 30
+  log_every_n_steps: 20
+  limit_train_batches: 1
+  limit_val_batches: 1
+  limit_test_batches: 1
+  checkpoint_monitor: "val_loss"
+  save_top_k: 3
+  checkpoint_mode: "min"
+  strategy: "ddp"
+
+experiment_base_name: "denovo_dreams"
+
+wandb:
+  project: "PhantoMS_Decoder"
+  entity: "jozefov-iocb-prague"
