@@ -44,7 +44,7 @@ class GCNLayer(nn.Module):
 
 class GATLayer(nn.Module):
     def __init__(self, in_channels: int, hidden_channels: int, heads: int = 4, concat: bool = True,
-                 dropout: float = 0.6):
+                 dropout: float = 0.2):
         """
         GAT Layer with optional embedding collection.
 
