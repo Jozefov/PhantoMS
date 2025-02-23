@@ -27,7 +27,7 @@ model:
   num_gat_heads: 4
   gat_dropout: 0.6
   dropout_rate: 0.1
-  max_smiles_len: 300
+  max_smiles_len: 200
   k_predictions: 1
   temperature: 1.0
   pre_norm: false
