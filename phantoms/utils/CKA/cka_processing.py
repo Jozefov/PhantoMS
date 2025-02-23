@@ -299,3 +299,63 @@ def compute_all_cka_matrices(experiment_dirs, layer_names):
     for exp_dir in experiment_dirs:
         cka_matrices[exp_dir] = compute_cka_matrix_for_experiment(exp_dir, layer_names)
     return cka_matrices
+
+
+def compute_alignment_metric(X, Y, top_k=5, center=True):
+    """
+    Computes an aggregate alignment metric between representations X and Y for a given layer.
+    It performs shared subspace analysis and returns the average cosine similarity over the top_k eigenvectors.
+
+    Args:
+        X (np.ndarray): Activation matrix from model A of shape [num_examples, dim].
+        Y (np.ndarray): Activation matrix from model B of shape [num_examples, dim].
+        top_k (int): Number of top eigenvectors to consider.
+        center (bool): Whether to center the data.
+
+    Returns:
+        float: Average cosine similarity over the top_k eigenvectors.
+    """
+    eigvals, proj_norms, cosines = shared_subspace_analysis(X, Y, center=center)
+    top_cos = cosines[:min(top_k, len(cosines))]
+    return np.mean(top_cos)
+
+
+def aggregate_alignment_metric(exp_dirs, layer_names, top_k=5, center=True):
+    """
+    For a list of experiment directories, compute the alignment metric for each layer
+    by comparing each unique pair of experiments using shared subspace analysis.
+
+    Args:
+        exp_dirs (list): List of experiment directory paths.
+        layer_names (list): List of layer names.
+        top_k (int): Number of top eigenvectors to consider.
+        center (bool): Whether to center the data.
+
+    Returns:
+        agg_dict (dict): Dictionary mapping each layer name to a tuple (mean, std, all_scores),
+                         where all_scores is a list of alignment metrics computed across pairs.
+    """
+    agg_dict = {layer: [] for layer in layer_names}
+    models_embeddings = {}
+    for exp_dir in exp_dirs:
+        models_embeddings[exp_dir] = load_embeddings(exp_dir, layer_names)
+
+    for exp1, exp2 in itertools.combinations(exp_dirs, 2):
+        emb1 = models_embeddings[exp1]
+        emb2 = models_embeddings[exp2]
+        for layer in layer_names:
+            if layer in emb1 and layer in emb2:
+                X = emb1[layer]  # shape: [num_examples, dim]
+                Y = emb2[layer]
+                metric = compute_alignment_metric(X, Y, top_k=top_k, center=center)
+                agg_dict[layer].append(metric)
+
+    for layer in agg_dict:
+        scores = np.array(agg_dict[layer])
+        if scores.size > 0:
+            mean_val = np.mean(scores)
+            std_val = np.std(scores)
+        else:
+            mean_val, std_val = np.nan, np.nan
+        agg_dict[layer] = (mean_val, std_val, agg_dict[layer])
+    return agg_dict
