@@ -12,7 +12,8 @@ from phantoms.utils.CKA.cka_processing import (compute_sorted_eigenvalues,
                                                compute_cum_explained_variance,
                                                aggregate_cum_explained_variance_for_type,
                                                aggregate_effective_rank_for_type,
-                                               aggregate_inter_model_cka_by_group)
+                                               aggregate_inter_model_cka_by_group,
+                                               aggregate_alignment_metric)
 from phantoms.utils.CKA.cka_data import load_embeddings
 
 
@@ -370,4 +371,72 @@ def plot_all_heatmaps_threshold_mask(cka_matrices, layer_names, metric='linear',
 
     plt.suptitle(f"Intra-Model {metric.upper()} CKA Heatmaps (Values >= {threshold} Masked)", fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
+
+
+def plot_alignment_metric_errorbars(agg_dict, layer_names, title="Average Alignment Metric vs. Layer", xlabel="Layer",
+                                    ylabel="Alignment Metric"):
+    """
+    Plots a line chart with error bars using aggregated alignment metrics.
+
+    Args:
+        agg_dict (dict): Dictionary mapping layer name to tuple (mean, std, all_scores).
+        layer_names (list): List of layer names (to preserve order on the x-axis).
+        title (str): Plot title.
+        xlabel (str): x-axis label.
+        ylabel (str): y-axis label.
+    """
+    x = np.arange(len(layer_names))
+    means = []
+    stds = []
+    for layer in layer_names:
+        mean_val, std_val, _ = agg_dict.get(layer, (np.nan, np.nan, []))
+        means.append(mean_val)
+        stds.append(std_val)
+
+    plt.figure(figsize=(12, 8))
+    plt.errorbar(x, means, yerr=stds, fmt='-o', capsize=5, color='tab:blue')
+    plt.xticks(x, layer_names, rotation=45, ha='right')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_aggregated_alignment_by_group(experiment_groups, layer_names, top_k=5, center=True):
+    """
+    Given a dictionary mapping group labels (e.g., ms levels or model types) to lists of experiment
+    directories, compute the aggregated alignment metric for each group and plot one curve (with error bars)
+    per group.
+
+    Args:
+        experiment_groups (dict): Mapping from group label (str) to list of experiment directory paths.
+        layer_names (list): List of layer names.
+        top_k (int): Number of top eigenvectors to consider in the alignment metric.
+        center (bool): Whether to center the data.
+    """
+    group_results = {}  # group label -> (x, means, stds)
+
+    for group_label, exp_dirs in experiment_groups.items():
+        agg_dict = aggregate_alignment_metric(exp_dirs, layer_names, top_k=top_k, center=center)
+        means = []
+        stds = []
+        for layer in layer_names:
+            mean_val, std_val, _ = agg_dict.get(layer, (np.nan, np.nan, []))
+            means.append(mean_val)
+            stds.append(std_val)
+        group_results[group_label] = (np.arange(len(layer_names)), np.array(means), np.array(stds))
+
+    plt.figure(figsize=(12, 8))
+    for group_label, (x, means, stds) in group_results.items():
+        plt.errorbar(x, means, yerr=stds, fmt='-o', capsize=5, label=group_label)
+    plt.xticks(x, layer_names, rotation=45, ha='right')
+    plt.xlabel("Layer")
+    plt.ylabel("Average Cosine Similarity (Top {})".format(top_k))
+    plt.title("Aggregated Alignment Metric vs. Layer (by Group)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
     plt.show()
