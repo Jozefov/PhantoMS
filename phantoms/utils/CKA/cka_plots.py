@@ -13,7 +13,9 @@ from phantoms.utils.CKA.cka_processing import (compute_sorted_eigenvalues,
                                                aggregate_cum_explained_variance_for_type,
                                                aggregate_effective_rank_for_type,
                                                aggregate_inter_model_cka_by_group,
-                                               aggregate_alignment_metric)
+                                               aggregate_alignment_metric,
+                                               aggregate_projection_norm_metric,
+                                               aggregate_projection_norm_by_reference)
 from phantoms.utils.CKA.cka_data import load_embeddings
 
 
@@ -436,6 +438,76 @@ def plot_aggregated_alignment_by_group(experiment_groups, layer_names, top_k=5, 
     plt.xlabel("Layer")
     plt.ylabel("Average Cosine Similarity (Top {})".format(top_k))
     plt.title("Aggregated Alignment Metric vs. Layer (by Group)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_aggregated_projection_norm_by_group(experiment_groups, layer_names, top_k=5, center=True):
+    """
+    Given a dictionary mapping group labels (e.g. ms levels or model types) to lists of experiment directories,
+    compute the aggregated projection norm metric for each group and plot one curve (with error bars)
+    per group over layers.
+
+    Args:
+        experiment_groups (dict): Mapping from group label (str) to list of experiment directory paths.
+        layer_names (list): List of layer names.
+        top_k (int): Number of top eigenvectors to consider.
+        center (bool): Whether to center the data.
+    """
+    group_results = {}
+    for group_label, exp_dirs in experiment_groups.items():
+        agg_dict = aggregate_projection_norm_metric(exp_dirs, layer_names, top_k=top_k, center=center)
+        means = []
+        stds = []
+        for layer in layer_names:
+            mean_val, std_val, _ = agg_dict.get(layer, (np.nan, np.nan, []))
+            means.append(mean_val)
+            stds.append(std_val)
+        group_results[group_label] = (np.arange(len(layer_names)), np.array(means), np.array(stds))
+
+    plt.figure(figsize=(12, 8))
+    for group_label, (x, means, stds) in group_results.items():
+        plt.errorbar(x, means, yerr=stds, fmt='-o', capsize=5, label=group_label)
+    plt.xticks(x, layer_names, rotation=45, ha='right')
+    plt.xlabel("Layer")
+    plt.ylabel("Average Projection Norm (Top {})".format(top_k))
+    plt.title("Aggregated Projection Norm vs. Layer (by Group)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_projection_norm_by_reference(exp_dirs, layer_names, top_k=5, center=True, model_label_func=None):
+    """
+    For a given list of experiment directories (from one experiment type or group),
+    treat each experiment as the reference and compute its projection norm metric (averaged over comparisons
+    with every other experiment) for each layer. Then plot one curve (with error bars) per reference.
+
+    Args:
+        exp_dirs (list): List of experiment directory paths.
+        layer_names (list): List of layer names.
+        top_k (int): Number of top eigenvectors to consider.
+        center (bool): Whether to center the data.
+        model_label_func (callable, optional): Function to extract a label from a directory.
+    """
+    results = aggregate_projection_norm_by_reference(exp_dirs, layer_names, top_k=top_k, center=center)
+
+    plt.figure(figsize=(12, 8))
+    x = np.arange(len(layer_names))
+    for ref, (means, stds, _) in results.items():
+        if model_label_func is not None:
+            label = model_label_func(ref)
+        else:
+            label = os.path.basename(ref)
+        plt.errorbar(x, means, yerr=stds, fmt='-o', capsize=5, label=label)
+
+    plt.xticks(x, layer_names, rotation=45, ha='right')
+    plt.xlabel("Layer")
+    plt.ylabel("Average Projection Norm (Top {})".format(top_k))
+    plt.title("Projection Norm Metric vs. Layer (Reference-Based)")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
