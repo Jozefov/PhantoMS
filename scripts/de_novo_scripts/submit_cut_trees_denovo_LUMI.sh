@@ -12,6 +12,11 @@
 export WANDB_API_KEY=${WANDB_API_KEY}
 export TOKENIZERS_PARALLELISM=false
 
+# Set NCCL environment variables
+export NCCL_BLOCKING_WAIT=1
+#export NCCL_DEBUG=INFO
+#export NCCL_TIMEOUT=3600
+
 cd /scratch/project_465001738/jozefov_147/PhantoMS
 
 module --force purge
