@@ -359,3 +359,109 @@ def aggregate_alignment_metric(exp_dirs, layer_names, top_k=5, center=True):
             mean_val, std_val = np.nan, np.nan
         agg_dict[layer] = (mean_val, std_val, agg_dict[layer])
     return agg_dict
+
+
+def compute_projection_norm_metric(X, Y, top_k=5, center=True):
+    """
+    Computes an aggregate projection norm metric between representations X and Y for a given layer.
+
+    This function performs shared subspace analysis and returns the average of the projection norms
+    (||S_Y u_i||) over the top_k eigenvectors.
+
+    Args:
+        X (np.ndarray): Activation matrix from model A of shape [num_examples, dim].
+        Y (np.ndarray): Activation matrix from model B of shape [num_examples, dim].
+        top_k (int): Number of top eigenvectors to consider.
+        center (bool): Whether to center the data.
+
+    Returns:
+        float: Average projection norm over the top_k eigenvectors.
+    """
+    eigvals, proj_norms, cosines = shared_subspace_analysis(X, Y, center=center)
+    top_norms = proj_norms[:min(top_k, len(proj_norms))]
+    return np.mean(top_norms)
+
+
+def aggregate_projection_norm_metric(exp_dirs, layer_names, top_k=5, center=True):
+    """
+    For a list of experiment directories, compute the projection norm metric for each layer
+    by comparing each unique pair of experiments using shared subspace analysis,
+    and then aggregate the results by computing the mean and std for each layer.
+
+    Args:
+        exp_dirs (list): List of experiment directory paths.
+        layer_names (list): List of layer names.
+        top_k (int): Number of top eigenvectors to consider.
+        center (bool): Whether to center the data.
+
+    Returns:
+        agg_dict (dict): Dictionary mapping each layer name to a tuple (mean, std, all_scores),
+                         where all_scores is a list of projection norm metrics computed across pairs.
+    """
+    agg_dict = {layer: [] for layer in layer_names}
+    models_embeddings = {}
+    for exp_dir in exp_dirs:
+        models_embeddings[exp_dir] = load_embeddings(exp_dir, layer_names)
+
+    for exp1, exp2 in itertools.combinations(exp_dirs, 2):
+        emb1 = models_embeddings[exp1]
+        emb2 = models_embeddings[exp2]
+        for layer in layer_names:
+            if layer in emb1 and layer in emb2:
+                X = emb1[layer]  # shape: [num_examples, dim]
+                Y = emb2[layer]
+                metric = compute_projection_norm_metric(X, Y, top_k=top_k, center=center)
+                agg_dict[layer].append(metric)
+
+    # Compute mean and std for each layer.
+    for layer in agg_dict:
+        scores = np.array(agg_dict[layer])
+        if scores.size > 0:
+            mean_val = np.mean(scores)
+            std_val = np.std(scores)
+        else:
+            mean_val, std_val = np.nan, np.nan
+        agg_dict[layer] = (mean_val, std_val, agg_dict[layer])
+    return agg_dict
+
+
+def aggregate_projection_norm_by_reference(exp_dirs, layer_names, top_k=5, center=True):
+    """
+    For a list of experiment directories, treat each experiment in turn as reference
+    and compute the projection norm metric for each layer by comparing that reference
+    to every other experiment (avoiding self-comparison).
+
+    Returns a dictionary mapping each reference experiment to a tuple:
+        (means, stds, details)
+    where means is a 1D array (length = number of layers) of mean projection norm metrics,
+    stds is the corresponding standard deviation, and details is a dictionary mapping each layer
+    to the list of projection norm scores obtained from comparisons.
+    """
+    results = {}
+    embeddings_dict = {}
+    for exp in exp_dirs:
+        embeddings_dict[exp] = load_embeddings(exp, layer_names)
+
+    for ref in exp_dirs:
+        layer_scores = {layer: [] for layer in layer_names}
+        for other in exp_dirs:
+            if other == ref:
+                continue  # avoid self-comparison
+            for layer in layer_names:
+                if layer in embeddings_dict[ref] and layer in embeddings_dict[other]:
+                    X = embeddings_dict[ref][layer]  # shape: [num_examples, dim]
+                    Y = embeddings_dict[other][layer]
+                    score = compute_projection_norm_metric(X, Y, top_k=top_k, center=center)
+                    layer_scores[layer].append(score)
+        means = []
+        stds = []
+        for layer in layer_names:
+            scores = np.array(layer_scores[layer])
+            if scores.size > 0:
+                means.append(np.mean(scores))
+                stds.append(np.std(scores))
+            else:
+                means.append(np.nan)
+                stds.append(np.nan)
+        results[ref] = (np.array(means), np.array(stds), layer_scores)
+    return results
