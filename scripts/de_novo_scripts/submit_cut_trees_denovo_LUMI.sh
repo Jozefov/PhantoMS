@@ -5,9 +5,7 @@
 #SBATCH --cpus-per-task=56
 #SBATCH --gpus-per-node=8
 #SBATCH --mem=480G
-#SBATCH --time=42:00:00
-
-# Load necessary modules and activate your environment
+#SBATCH --time=12:00:00
 
 export WANDB_API_KEY=${WANDB_API_KEY}
 export TOKENIZERS_PARALLELISM=false
@@ -15,7 +13,7 @@ export TOKENIZERS_PARALLELISM=false
 # Set NCCL environment variables
 export NCCL_BLOCKING_WAIT=1
 #export NCCL_DEBUG=INFO
-#export NCCL_TIMEOUT=3600
+export NCCL_TIMEOUT=3600
 
 cd /scratch/project_465001738/jozefov_147/PhantoMS
 

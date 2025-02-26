@@ -143,8 +143,8 @@ if __name__ == "__main__":
     # set resume_config and resume_level accordingly.
     # resume_config = 'config_skip_connection_dreams_LUMI.yml'
     # resume_level = 3
-    resume_config = 'config_denovo_spectra_LUMI.yml'
-    resume_level = 1
+    resume_config = 'config_denovo_dreams_bonus_LUMI.yml'
+    resume_level = 2
 
     # Authenticate with W&B
     print("Logging into Weights & Biases...")
