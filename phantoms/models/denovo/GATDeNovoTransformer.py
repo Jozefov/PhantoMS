@@ -267,8 +267,11 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
             beam = new_beam[:beam_width]
             if all(candidate[2] for candidate in beam):
                 break
-        best_seq, _, _ = max(beam, key=lambda x: x[1])
-        return best_seq
+        # best_seq, _, _ = max(beam, key=lambda x: x[1])
+        # return best_seq
+
+        beam.sort(key=lambda x: x[1], reverse=True)
+        return [seq for seq, log_prob, finished in beam]
 
     def decode_smiles(self, batch: dict, beam_width: Optional[int] = None) -> List[List[str]]:
         """
@@ -320,11 +323,18 @@ class GATDeNovoTransformer(DeNovoMassSpecGymModel):
                 text = self.smiles_tokenizer.decode(seq, skip_special_tokens=True)
                 decoded_list.append([text])
         else:
+            # for i in range(batch_size):
+            #     mem = memory_all[i]
+            #     best_seq = self.beam_search_decode(mem, beam_width, self.max_smiles_len)
+            #     text = self.smiles_tokenizer.decode(best_seq, skip_special_tokens=True)
+            #     decoded_list.append([text])
+
             for i in range(batch_size):
                 mem = memory_all[i]
-                best_seq = self.beam_search_decode(mem, beam_width, self.max_smiles_len)
-                text = self.smiles_tokenizer.decode(best_seq, skip_special_tokens=True)
-                decoded_list.append([text])
+                candidate_seqs = self.beam_search_decode(mem, beam_width, self.max_smiles_len)
+                decoded_candidates = [self.smiles_tokenizer.decode(seq, skip_special_tokens=True) for seq in
+                                      candidate_seqs]
+                decoded_list.append(decoded_candidates)
         return decoded_list
 
     def get_embeddings(self, batch: dict) -> Dict[str, torch.Tensor]:
