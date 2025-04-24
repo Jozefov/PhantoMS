@@ -229,150 +229,181 @@ def plot_aggregated_inter_model_cka_by_group(experiment_groups, layer_names, met
 def plot_all_heatmaps(cka_matrices, layer_names, metric='linear', max_value='inter'):
     """
     Plot a 2x2 grid of heatmaps corresponding to the CKA matrices computed
-    for different experiment directories.
-
-    Args:
-        cka_matrices (dict): Dictionary with keys as experiment directory paths
-                             and values as CKA matrices (shape: [num_layers, num_layers, 2]).
-        layer_names (list): List of layer names (used for x- and y-axis labels).
-        metric (str): 'linear' for linear CKA or 'rbf' for RBF kernel CKA.
-        max_value (str): 'inter' to scale each heatmap independently by its maximum
-                         off-diagonal value, or 'outer' to use the maximum off-diagonal
-                         value across all heatmaps for a common scale.
+    for different experiment directories, masking the diagonal (overlayed in pink),
+    with improved, consistent font sizes for readability.
     """
-
     metric_idx = 0 if metric.lower() == 'linear' else 1
 
-    # If using outer scaling, compute the global maximum (off-diagonal) across all experiments.
+    # Compute global off-diagonal max if requested
     global_max = None
     if max_value == 'outer':
         max_vals = []
-        for cka_matrix in cka_matrices.values():
-            data = cka_matrix[:, :, metric_idx]
-            mask = np.eye(data.shape[0], dtype=bool)
-            if np.sum(~mask) > 0:
-                max_vals.append(np.max(data[~mask]))
+        for mat in cka_matrices.values():
+            data = mat[:, :, metric_idx]
+            diag_mask = np.eye(data.shape[0], dtype=bool)
+            if np.any(~diag_mask):
+                max_vals.append(data[~diag_mask].max())
         if max_vals:
-            global_max = np.max(max_vals)
+            global_max = max(max_vals)
 
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     axes = axes.flatten()
 
     for ax, (exp_dir, cka_matrix) in zip(axes, cka_matrices.items()):
         data = cka_matrix[:, :, metric_idx]
-        mask = np.eye(data.shape[0], dtype=bool)
+        diag_mask = np.eye(data.shape[0], dtype=bool)
 
-        # Determine vmax: if 'outer', use global_max; else compute for this heatmap.
+        # determine color limits
         if max_value == 'outer':
-            vmax = global_max
+            vmin, vmax = 0, global_max
         else:
-            # Compute maximum from off-diagonals for this heatmap.
-            if np.sum(~mask) > 0:
-                vmax = np.max(data[~mask])
-            else:
-                vmax = None
+            offdiag = data[~diag_mask]
+            vmin = 0
+            vmax = offdiag.max() if offdiag.size else None
 
-        # sns.heatmap(data, ax=ax, annot=False, fmt=".2f",
-        #             xticklabels=layer_names, yticklabels=layer_names,
-        #             cmap='coolwarm', mask=mask, vmin=0, vmax=vmax)
+        # draw heatmap
+        sns.heatmap(
+            data,
+            ax=ax,
+            mask=diag_mask,
+            cmap='Oranges',
+            vmin=vmin,
+            vmax=vmax,
+            square=True,
+            cbar=True,
+            cbar_kws={'shrink': 0.6},
+            xticklabels=layer_names,
+            yticklabels=layer_names
+        )
 
+        # invert y so layer 0 is at the bottom
+        ax.invert_yaxis()
 
-        # Plot the heatmap with the diagonal masked.
-        sns.heatmap(data, ax=ax, annot=False, fmt=".2f",
-                    xticklabels=layer_names, yticklabels=layer_names,
-                    cmap='Oranges', mask=mask, vmin=0, vmax=vmax)
+        # overlay pink on diagonal
+        n = data.shape[0]
+        for i in range(n):
+            ax.add_patch(
+                patches.Rectangle((i, i), 1, 1, facecolor='pink', edgecolor='none', zorder=3)
+            )
 
-        # Overlay pink patches on the diagonal cells.
-        # Each cell in the heatmap is 1x1 in the coordinate system.
-        for i in range(len(layer_names)):
-            ax.add_patch(patches.Rectangle((i, i), 1, 1, fill=True, color='pink', lw=0, zorder=3))
+        # styling ticks and labels (same as threshold-mask version)
+        ax.tick_params(axis='x', rotation=45, labelsize=8)
+        ax.tick_params(axis='y', rotation=0, labelsize=8)
+        for lbl in ax.get_xticklabels():
+            lbl.set_ha('right')
+        for lbl in ax.get_yticklabels():
+            lbl.set_ha('right')
 
-        match = re.search(r'cut_tree_\d+', exp_dir)
-        if match:
-            title = match.group(0)
+        # build "Max Fragmentation Stage n" title
+        m = re.search(r'cut_tree_(\d+)', exp_dir)
+        if m:
+            stage = int(m.group(1))
+            title = f"Max Fragmentation Stage {stage}"
         else:
             title = os.path.basename(exp_dir)
 
         ax.set_title(f"{title}\n{metric.upper()} CKA", fontsize=10)
-        ax.set_xlabel("Layers")
-        ax.set_ylabel("Layers")
-        ax.tick_params(axis='x', rotation=45)
-        ax.tick_params(axis='y', rotation=0)
+        ax.set_xlabel("Layers", fontsize=9)
+        ax.set_ylabel("Layers", fontsize=9)
 
-def plot_all_heatmaps_threshold_mask(cka_matrices, layer_names, metric='linear', max_value='inter', threshold=0.2):
+    # adjust margins so labels aren’t clipped, plus supertitle
+    plt.tight_layout(rect=[0.1, 0, 1, 0.95])
+    plt.suptitle(f"Intra-Model {metric.upper()} CKA Heatmaps", fontsize=16)
+    plt.show()
+
+def plot_all_heatmaps_threshold_mask(cka_matrices,
+                                    layer_names,
+                                    metric='linear',
+                                    max_value='inter',
+                                    threshold=0.2):
     """
     Plot a 2x2 grid of heatmaps corresponding to the CKA matrices computed
-    for different experiment directories, masking all values greater than or equal
-    to a given threshold. Masked cells are overlaid with pink.
-
-    Args:
-        cka_matrices (dict): Dictionary with keys as experiment directory paths
-                             and values as CKA matrices (shape: [num_layers, num_layers, 2]).
-        layer_names (list): List of layer names (used for x- and y-axis labels).
-        metric (str): 'linear' for linear CKA or 'rbf' for RBF kernel CKA.
-        max_value (str): 'inter' to scale each heatmap independently by its maximum
-                         unmasked value, or 'outer' to use the maximum unmasked value
-                         across all heatmaps for a common scale.
-        threshold (float): All values in the CKA matrices that are >= threshold will be masked.
+    for different experiment directories, masking all values >= threshold
+    (overlayed in pink), and titling each by its max-fragmentation stage.
     """
-
     metric_idx = 0 if metric.lower() == 'linear' else 1
 
-    # If using outer scaling, compute the global maximum from unmasked values across experiments.
+    # compute a global max for 'outer' scaling
     global_max = None
     if max_value == 'outer':
         max_vals = []
-        for cka_matrix in cka_matrices.values():
-            data = cka_matrix[:, :, metric_idx]
-            # Mask cells where the value is >= threshold.
+        for mat in cka_matrices.values():
+            data = mat[:, :, metric_idx]
             mask = data >= threshold
-            if np.sum(~mask) > 0:
-                max_vals.append(np.max(data[~mask]))
+            if np.any(~mask):
+                max_vals.append(data[~mask].max())
         if max_vals:
-            global_max = np.max(max_vals)
+            global_max = max(max_vals)
 
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     axes = axes.flatten()
 
     for ax, (exp_dir, cka_matrix) in zip(axes, cka_matrices.items()):
         data = cka_matrix[:, :, metric_idx]
-        # Create a mask for all cells where value is >= threshold.
         mask = data >= threshold
 
-        # Determine vmax: if using outer scaling, use global_max; otherwise compute local maximum from unmasked cells.
+        # determine color range
         if max_value == 'outer':
-            vmax = global_max
+            vmin, vmax = 0, global_max
         else:
-            if np.sum(~mask) > 0:
-                vmax = np.max(data[~mask])
-            else:
-                vmax = None
+            unmasked = data[~mask]
+            vmin = 0
+            vmax = unmasked.max() if unmasked.size else None
 
-        # Plot heatmap with cells >= threshold masked.
-        sns.heatmap(data, ax=ax, annot=False, fmt=".2f",
-                    xticklabels=layer_names, yticklabels=layer_names,
-                    cmap='Oranges', mask=mask, vmin=0, vmax=vmax)
+        # draw the heatmap with its own colorbar
+        sns.heatmap(
+            data,
+            ax=ax,
+            mask=mask,
+            cmap='Oranges',
+            vmin=vmin,
+            vmax=vmax,
+            square=True,
+            cbar=True,
+            cbar_kws={'shrink': 0.6},
+            xticklabels=layer_names,
+            yticklabels=layer_names
+        )
 
-        # Overlay pink patches on each masked cell.
-        for i in range(data.shape[0]):
-            for j in range(data.shape[1]):
+        # flip y so layer 0 sits at the bottom
+        ax.invert_yaxis()
+
+        # overlay pink on masked cells
+        n = data.shape[0]
+        for i in range(n):
+            for j in range(n):
                 if mask[i, j]:
-                    ax.add_patch(patches.Rectangle((j, i), 1, 1, fill=True, color='pink', lw=0, zorder=3))
+                    ax.add_patch(
+                        patches.Rectangle((j, i), 1, 1,
+                                          facecolor='pink',
+                                          edgecolor='none',
+                                          zorder=3)
+                    )
 
-        match = re.search(r'cut_tree_\d+', exp_dir)
-        if match:
-            title = match.group(0)
+        # right-align tick labels
+        ax.tick_params(axis='x', rotation=45, labelsize=8)
+        ax.tick_params(axis='y', rotation=0, labelsize=8)
+        for lbl in ax.get_xticklabels():
+            lbl.set_ha('right')
+        for lbl in ax.get_yticklabels():
+            lbl.set_ha('right')
+
+        # extract the fragmentation stage number from the path
+        m = re.search(r'cut_tree_(\d+)', exp_dir)
+        if m:
+            stage = int(m.group(1))
+            title = f"Max Fragmentation Stage {stage}"
         else:
             title = os.path.basename(exp_dir)
 
         ax.set_title(f"{title}\n{metric.upper()} CKA", fontsize=10)
-        ax.set_xlabel("Layers")
-        ax.set_ylabel("Layers")
-        ax.tick_params(axis='x', rotation=45)
-        ax.tick_params(axis='y', rotation=0)
+        ax.set_xlabel("Layers", fontsize=9)
+        ax.set_ylabel("Layers", fontsize=9)
 
-    plt.suptitle(f"Intra-Model {metric.upper()} CKA Heatmaps (Values >= {threshold} Masked)", fontsize=16)
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    # give some extra room on the left for y‐labels
+    plt.tight_layout(rect=[0.1, 0, 1, 0.95])
+    plt.suptitle(f"Intra-Model {metric.upper()} CKA Heatmaps\n(values ≥ {threshold} masked)",
+                 fontsize=16)
     plt.show()
 
 
