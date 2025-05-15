@@ -8,8 +8,8 @@
 **PhantoMS** is a suite of graph‑neural‑network models and analysis tools designed for multi‑stage mass spectrometry. Built on the MassSpecGymMSn benchmark, PhantoMS implements both the standard and bonus variants of the Retrieval and De novo challenges. By training on progressively deeper fragmentation stages, our models learn richer internal representations, and achieved significant improvements over MS/MS baselines. Overall it focuses on:
 - 🧪 **Multi‑stage MSn mass spectra**: handle MSn mass spectra 
 - 🔍 **Retrieval** & ✨ **Bonus retrieval**: rank candidate molecules (with or without ground‑truth formulae)
-- 🔍**De novo generation** & ✨ **Bonus De novo**: predict molecular graphs, optionally conditioned on true formulae
-- 🧠**Centered Kernel Alignment (CKA)**: investigation of internal models representations trained on different MSn fragmentation stages 
+- 🔍 **De novo generation** & ✨ **Bonus De novo**: predict molecular graphs, optionally conditioned on true formulae
+- 🧠 **Centered Kernel Alignment (CKA)**: investigation of internal models representations trained on different MSn fragmentation stages 
 
 
 ## 📦 Installation
