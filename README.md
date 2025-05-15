@@ -27,7 +27,8 @@ Below is a minimal example of a GNN‑based retrieval model using the MassSpecGy
 ```python
 # Imports
 from massspecgym.data.datasets import MSnRetrievalDataset
-from massspecgym.data.transforms import SpectrumFeaturizer, MolFingerprinter
+from massspecgym.data.transforms import MolFingerprinter
+from massspecgym.featurize import SpectrumFeaturizer
 from massspecgym.data import MassSpecDataModule
 from massspecgym.models.retrieval.base import RetrievalMassSpecGymModel
 from torch_geometric.nn import GCNConv, global_mean_pool
@@ -42,9 +43,15 @@ candidates_cache = "MassSpecGymMSn_retrieval_candidates_mass.h5"
 split_file       = "20241211_split.tsv"
 
 config = {
-   'features': ['collision_energy','ionmode','adduct','spectrum_stats',
-                'atom_counts','value','retention_time','ion_source','binned_peaks'],
-   'feature_attributes': {'atom_counts': {'top_n_atoms':12,'include_other':True}},
+    'features': ['collision_energy', 'ionmode', 'adduct', 'spectrum_stats', 
+                 'atom_counts', 'value', "retention_time", 'ion_source',
+                 'binned_peaks'],
+    'feature_attributes': {
+        'atom_counts': {
+            'top_n_atoms': 12,
+            'include_other': True,
+        },
+    },
 }
 featurizer = SpectrumFeaturizer(config, mode='torch')
 
