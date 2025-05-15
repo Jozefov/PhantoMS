@@ -56,7 +56,7 @@ config = {
 featurizer = SpectrumFeaturizer(config, mode='torch')
 
 fp_size = 2048
-batch_size = 12
+batch_size = 32
 
 dataset = MSnRetrievalDataset(
     pth=mass_spectra,
@@ -69,7 +69,7 @@ data_module = MassSpecDataModule(
     dataset=dataset,
     batch_size=batch_size,
     split_pth=split_file,
-    num_workers=4,
+    num_workers=0,
 )
 data_module.prepare_data()
 data_module.setup()
@@ -114,10 +114,12 @@ model = GNNRetrievalModel(hidden_channels=128,
                           out_channels=fp_size,
                           node_feature_dim=1039,
                           at_ks=(1,5,20))
-trainer = Trainer(accelerator="cpu", devices=1,
-                  max_epochs=2,
-                  limit_train_batches=2,
-                  limit_val_batches=2)
+trainer = Trainer(
+    accelerator="cpu", devices=1,
+    max_epochs=2,                  # train for at most 2 epochs
+    limit_train_batches=2,         # use only 2 training batches per epoch
+    limit_val_batches=2            # use only 2 validation batches per epoch
+)
 trainer.fit(model, data_module)
 trainer.test(model, data_module)
 ```
